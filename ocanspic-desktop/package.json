@@ -114,6 +114,14 @@
         "AppImage"
       ],
       "category": "Education"
-    }
+    },
+    "protocols": [
+      {
+        "name": "OCansPic",
+        "schemes": [
+          "ocanspic"
+        ]
+      }
+    ]
   }
 }

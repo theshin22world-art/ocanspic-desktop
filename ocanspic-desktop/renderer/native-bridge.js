@@ -9,7 +9,10 @@
   /* ---------- 엔진 준비 상태 ---------- */
   var engineReady = false, readyWaiters = [];
   function whenEngine() { return engineReady ? Promise.resolve() : new Promise(function (r) { readyWaiters.push(r); }); }
-  O.engine.onReady(function () { engineReady = true; readyWaiters.splice(0).forEach(function (f) { f(); }); paintSetup(); });
+  O.engine.onReady(function () {
+    engineReady = true; readyWaiters.splice(0).forEach(function (f) { f(); }); paintSetup();
+    setTimeout(function () { try { var v = chosen(); O.tts.speak('Hi, welcome back.', v.sid, 1).catch(function () {}); } catch (e) {} }, 400);   // 워밍업
+  });
   O.engine.onExit(function () { engineReady = false; setTimeout(function () { O.engine.start(); }, 1500); });   // 죽으면 다시 띄운다
   O.engine.status().then(function (s) { if (s.ready) { engineReady = true; readyWaiters.splice(0).forEach(function (f) { f(); }); } });
 
@@ -121,6 +124,12 @@
     window.ttsAdvice = function () { return ['<b>오캔스픽 데스크톱은 내장 신경망 음성(Kokoro)을 씁니다.</b> 인터넷이 없어도 재생되고, 위 목록에서 목소리를 고를 수 있습니다. 브라우저·OS 음성 설정은 필요 없습니다.']; };
     window.ttsCancel = function () { curToken++; try { if (curSrc) curSrc.stop(); } catch (e) {} curSrc = null; window.__ttsBusy = false; };
     window.ttsRelease = function () { window.__ttsBusy = false; };
+    /* 미리 합성 — 엔진 캐시에만 넣고 재생하지 않는다 */
+    window.ttsPrefetch = function (text) {
+      if (!text) return;
+      var v = chosen(), rate = window.store ? (window.store.s().rate || 0.95) : 0.95;
+      whenEngine().then(function () { splitSentences(text).forEach(function (s) { O.tts.speak(s, v.sid, rate).catch(function () {}); }); });
+    };
     window.ttsSpeak = function (text, opts) {
       opts = opts || {};
       var v = chosen(), rate = opts.rate || (window.store ? (window.store.s().rate || 0.95) : 0.95);
@@ -156,8 +165,11 @@
   /* ---------- 최초 1회: 모델 내려받기 화면 ---------- */
   var setupEl = null, lastP = null, setupErr = null, setupDone = false;
   function fmtMB(b) { return (b / 1048576).toFixed(b > 100e6 ? 0 : 1) + 'MB'; }
+  var micChecked = false; try { micChecked = localStorage.getItem('ocan_mic_ok') === '1'; } catch (e) {}
+  var micStage = null;   // null | 'ask' | 'listen' | 'ok' | 'fail'
   function paintSetup() {
     if (!setupEl) return;
+    if (setupDone && engineReady && !micChecked) { paintMic(); return; }
     if (setupDone && engineReady) { setupEl.remove(); setupEl = null; return; }
     var h = '<div class="ocs-box"><div class="ocs-k">FIRST RUN · SPEECH ENGINE</div>';
     if (!setupDone) {
@@ -177,7 +189,37 @@
     setupEl.innerHTML = h;
     var rb = document.getElementById('ocsRetry'); if (rb) rb.onclick = function () { setupErr = null; lastP = null; paintSetup(); runSetup(); };
   }
-  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '"': '&quot;', '>': '&gt;' }[c]; }); }
+  /* ---- 첫 실행 마이크 점검 ---- */
+  var micTimer = null, micPeak = 0;
+  function paintMic() {
+    if (!setupEl) return;
+    if (!micStage) micStage = 'ask';
+    var h = '<div class="ocs-box"><div class="ocs-k">FIRST RUN · MICROPHONE</div>';
+    if (micStage === 'ask') h += '<h2>마이크를 한 번만 확인할게요</h2><p>말하기 채점과 녹음에 마이크가 필요합니다. 아래 버튼을 누르면 권한 창이 한 번 뜨고, 3초 동안 아무 말이나 해 보세요.</p><button class="ocs-btn" id="ocsMic">🎙 마이크 확인 시작</button>';
+    else if (micStage === 'listen') h += '<h2>지금 말해 보세요</h2><p>"Hello, my name is…" 정도면 충분합니다.</p><div class="ocs-bar"><i id="ocsLvl" style="width:0;transition:width .08s"></i></div><div class="ocs-row"><span>입력 레벨</span><span id="ocsLvlTxt">듣는 중…</span></div>';
+    else if (micStage === 'ok') h += '<h2>잘 들립니다 ✓</h2><p>준비 끝. 이제 시작합니다.</p><button class="ocs-btn" id="ocsGo">시작하기</button>';
+    else h += '<h2>소리가 잡히지 않았습니다</h2><p>Windows 설정 → 개인 정보 → 마이크에서 앱 접근이 켜져 있는지, 헤드셋이 기본 장치인지 확인한 뒤 다시 시도하세요. 지금은 건너뛰고 나중에 설정 → 마이크 진단에서 확인해도 됩니다.</p><div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="ocs-btn" id="ocsMic">다시 시도</button><button class="ocs-btn" id="ocsSkip" style="background:#2a3140">건너뛰기</button></div>';
+    h += '</div>'; setupEl.innerHTML = h;
+    var b = document.getElementById('ocsMic'); if (b) b.onclick = startMicCheck;
+    var g = document.getElementById('ocsGo'); if (g) g.onclick = finishMic;
+    var sk = document.getElementById('ocsSkip'); if (sk) sk.onclick = finishMic;
+  }
+  function finishMic() { micChecked = true; try { localStorage.setItem('ocan_mic_ok', '1'); } catch (e) {} if (setupEl) { setupEl.remove(); setupEl = null; } }
+  function startMicCheck() {
+    micStage = 'listen'; micPeak = 0; paintMic();
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+      var c = new (window.AudioContext || window.webkitAudioContext)(); var src = c.createMediaStreamSource(stream); var an = c.createAnalyser(); an.fftSize = 1024; src.connect(an);
+      var buf = new Float32Array(an.fftSize), t0 = Date.now();
+      micTimer = setInterval(function () {
+        an.getFloatTimeDomainData(buf); var s = 0; for (var i = 0; i < buf.length; i++) s += buf[i] * buf[i]; var rms = Math.sqrt(s / buf.length);
+        micPeak = Math.max(micPeak, rms);
+        var el = document.getElementById('ocsLvl'); if (el) el.style.width = Math.min(100, rms * 900) + '%';
+        var tx = document.getElementById('ocsLvlTxt'); if (tx) tx.textContent = Math.max(0, 3 - Math.floor((Date.now() - t0) / 1000)) + '초';
+        if (Date.now() - t0 > 3200) { clearInterval(micTimer); stream.getTracks().forEach(function (t) { t.stop(); }); try { c.close(); } catch (e) {} micStage = micPeak > 0.01 ? 'ok' : 'fail'; paintMic(); }
+      }, 80);
+    }).catch(function () { micStage = 'fail'; paintMic(); });
+  }
   function runSetup() {
     O.models.ensure().then(function (st) { setupDone = true; paintSetup(); O.engine.start(); }).catch(function (e) { setupErr = (e && e.message) || String(e); paintSetup(); });
   }
@@ -200,7 +242,7 @@
   O.models.onProgress(function (p) { lastP = p; paintSetup(); });
   function boot() {
     O.models.status().then(function (st) {
-      if (st.ready) { setupDone = true; if (!engineReady) { mountSetup(); } return; }
+      if (st.ready) { setupDone = true; if (!engineReady || !micChecked) { mountSetup(); } return; }
       mountSetup(); runSetup();
     });
   }

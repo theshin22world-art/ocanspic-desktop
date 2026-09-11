@@ -9,9 +9,22 @@ let win = null, engine = null, engineReady = false;
 const pending = new Map();      // tts id → resolve
 const modelsDir = () => path.join(app.getPath('userData'), 'models');
 
-/* 단일 인스턴스 */
+/* 단일 인스턴스 + 딥링크 (ocanspic://auth?...) */
+const PROTO = 'ocanspic';
+if (process.defaultApp) { if (process.argv.length >= 2) app.setAsDefaultProtocolClient(PROTO, process.execPath, [path.resolve(process.argv[1])]); }
+else app.setAsDefaultProtocolClient(PROTO);
+let pendingUrl = null;
+function handleDeepLink(url) {
+  if (!url || url.indexOf(PROTO + '://') !== 0) return;
+  if (win && !win.isDestroyed()) { win.webContents.send('auth:callback', url); if (win.isMinimized()) win.restore(); win.focus(); }
+  else pendingUrl = url;
+}
 if (!app.requestSingleInstanceLock()) { app.quit(); }
-app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.focus(); } });
+app.on('second-instance', (e, argv) => {
+  const u = argv.find(a => a.indexOf(PROTO + '://') === 0); if (u) handleDeepLink(u);
+  if (win) { if (win.isMinimized()) win.restore(); win.focus(); }
+});
+app.on('open-url', (e, url) => { e.preventDefault(); handleDeepLink(url); });   // macOS
 
 function createWindow() {
   win = new BrowserWindow({
@@ -25,7 +38,9 @@ function createWindow() {
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
   win.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: 'deny' }; });
   win.on('closed', () => { win = null; });
+  win.webContents.on('did-finish-load', () => { if (pendingUrl) { win.webContents.send('auth:callback', pendingUrl); pendingUrl = null; } const u = process.argv.find(a => a.indexOf(PROTO + '://') === 0); if (u) { win.webContents.send('auth:callback', u); } });
 }
+ipcMain.handle('app:openExternal', (e, url) => { if (/^https?:\/\//.test(url)) shell.openExternal(url); return true; });
 
 /* 마이크 권한: 한 번 허용하면 끝 (OS 권한은 별도) */
 function setupPermissions() {

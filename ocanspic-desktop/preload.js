@@ -1,7 +1,8 @@
 'use strict';
 const { contextBridge, ipcRenderer } = require('electron');
 
-const listeners = { stt: new Set(), progress: new Set(), ready: new Set(), update: new Set(), exit: new Set() };
+const listeners = { stt: new Set(), progress: new Set(), ready: new Set(), update: new Set(), exit: new Set(), auth: new Set() };
+ipcRenderer.on('auth:callback', (e, url) => listeners.auth.forEach(f => f(url)));
 ipcRenderer.on('engine:stt', (e, m) => listeners.stt.forEach(f => f(m)));
 ipcRenderer.on('models:progress', (e, p) => listeners.progress.forEach(f => f(p)));
 ipcRenderer.on('engine:ready', (e, m) => listeners.ready.forEach(f => f(m)));
@@ -11,6 +12,8 @@ ipcRenderer.on('app:update-ready', (e, m) => listeners.update.forEach(f => f(m))
 contextBridge.exposeInMainWorld('ocan', {
   desktop: true,
   info: () => ipcRenderer.invoke('app:info'),
+  openExternal: (url) => ipcRenderer.invoke('app:openExternal', url),
+  onAuthCallback: (f) => { listeners.auth.add(f); return () => listeners.auth.delete(f); },
   models: {
     status: () => ipcRenderer.invoke('models:status'),
     ensure: () => ipcRenderer.invoke('models:ensure'),
