@@ -4,6 +4,9 @@ on:
     tags: ['v*']          # 예: git tag v1.0.0 && git push --tags
   workflow_dispatch:      # Actions 탭 → Run workflow 버튼으로도 실행
 
+permissions:
+  contents: write         # 릴리스 생성·파일 업로드에 필요
+
 jobs:
   build:
     strategy:
@@ -30,7 +33,17 @@ jobs:
           elif [ -f ocanspic-desktop/package.json ]; then echo "dir=ocanspic-desktop" >> "$GITHUB_OUTPUT";
           else echo "package.json 을 찾을 수 없습니다"; exit 1; fi
 
-      - run: npm ci
+      - name: Install dependencies
+        shell: bash
+        run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+        working-directory: ${{ steps.app.outputs.dir }}
+      - name: Check files
+        shell: bash
+        run: |
+          ls -la
+          test -f renderer/index.html || { echo "::error::renderer/index.html 이 없습니다 — zip 의 renderer 폴더를 올려 주세요"; exit 1; }
+          test -f renderer/native-bridge.js || { echo "::error::renderer/native-bridge.js 가 없습니다"; exit 1; }
+          test -f build/icon.png || { echo "::error::build/icon.png 이 없습니다"; exit 1; }
         working-directory: ${{ steps.app.outputs.dir }}
       - run: node sync.js
         working-directory: ${{ steps.app.outputs.dir }}
