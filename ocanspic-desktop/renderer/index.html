@@ -1563,6 +1563,13 @@ html[data-theme="light"] .qstoast{background:#14171d;color:#f3f5f9}
       </div>
     </div>
 
+    <div class="set" id="setPushRow" style="display:none">
+      <div class="row" style="align-items:center;justify-content:space-between">
+        <label style="margin:0">매일 알림 <small style="color:var(--dim);font-weight:400;margin-left:6px" id="setPushInfo">매일 저녁 8시 한 번</small></label>
+        <label class="switch"><input type="checkbox" id="setPush"><span></span></label>
+      </div>
+    </div>
+
     <div class="set">
       <div class="row" style="align-items:center;justify-content:space-between">
         <label style="margin:0">라이트 모드 <small style="color:var(--dim);font-weight:400;margin-left:6px">흰 배경 · 검은 글자</small></label>
@@ -1771,8 +1778,14 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 /* ===== 08_version.js ===== */
 /* ===== 버전 · 변경 내역 ===== */
 window.APP_NAME = '오캔스픽';
-window.APP_VERSION = '1.0.0';
+window.APP_VERSION = '1.0.1';
 window.CHANGELOG = [
+  { v: '1.0.1', d: '2026-09-12', items: [
+    '체험 범위 정리 — 온보딩 퀘스트 다섯 개(자기소개까지) 무료, 첫 모의고사부터 이용권',
+    '이용권 만료 7일 전 안내와 만료 후 이어하기 안내',
+    'Google 로그인 시 항상 계정 선택창 표시, 이메일 코드 자릿수 자동 인식',
+    '네이버·Apple 로그인은 준비 중 안내로 정리'
+  ] },
   { v: '1.0.0', d: '2026-09-10', items: [
     '첫 정식 빌드 — 로그인·이름 설정, 타이틀 인사',
     '온보딩(첫날 미끼 퀘스트 6개)과 디데이 기준 Day N «오늘의 퀘스트»',
@@ -1793,7 +1806,10 @@ window.CLOUD = {
   naver: false,       // 네이버 로그인 (출시 후 추가 예정 — true 로 바꾸면 버튼이 살아난다)
   apple: false,       // Apple 로그인 (Apple 팀 승인 뒤 Supabase 설정 후 true)
   maxDevices: 2,
-  price: 87000, planName: '3개월 이용권', planDays: 90
+  playSku: 'pass_3m',              // Google Play 인앱 상품 ID (Play Console 에서 같은 ID로 생성)
+  vapidPublic: 'BHC4YqEAptlfwwCFv6Gx2_BbJaG55AF8ebFossqKfMNbw4PUDW90Tpt70WZptgQJ59ccbbcvLHiZ9Mki6rxjdd4',   // 웹푸시 공개키 (비밀키는 Supabase 함수 시크릿 VAPID_PRIVATE_KEY)
+  pushHour: 20,                    // 매일 알림 시각 (KST)
+  price: 112500, planName: '3개월 이용권', planDays: 90
 };
 
 /* ===== 10_data.js ===== */
@@ -7161,7 +7177,7 @@ window.koOf = function (en) {
   function startExam() {
     var st = S.s();
     var mode = window.__modeOnce || st.mode;   // 컨설팅 «7문항 축약» 바로가기는 이번 응시만 축약
-    if (mode === 'full' && window.requirePro && !window.requirePro('15문항 풀세트 모의고사')) return;
+    if (window.requirePro && !window.requirePro(mode === 'full' ? '15문항 풀세트 모의고사' : '7문항 축약 모의고사', { momentum: window.inTrial && window.inTrial() })) return;
     window.__modeOnce = null;
     var items = window.buildExam(S.get().survey, mode, st.difficulty);
     EX = {
@@ -10157,6 +10173,7 @@ window.koOf = function (en) {
     if (g === 'pre') { window.startSurveyThen(function () { markDone('pre'); window.renderConsult('diag'); nav('sc-consult'); }); return; }
     if (g === 'intro') { openIntro(); return; }
     if (g === 'exam7') {
+      if (window.requirePro && !window.requirePro('첫 모의고사(7문항)', { momentum: true })) return;
       d.base.sess = (window.store.get().sessions || []).length; save(d);
       if (d.done.exam7) { window.startQuickExam('short'); return; }
       gateModal(function () { window.startQuickExam('short'); }); return;
@@ -10305,7 +10322,7 @@ window.koOf = function (en) {
       + (lvl ? '<p style="margin:12px 0 0">첫 진단: <b style="color:var(--warn)">' + esc(lvl) + ' 추정</b></p>' : '')
       + '<p style="margin:12px 0 0;color:var(--tx)">이제부터가 진짜입니다. <b>' + (window.dday.days() != null ? 'D-' + window.dday.days() : 'D-14') + '</b> 기준 Day 1 퀘스트를 드립니다.</p></div>'
       + '<div class="dctl" style="margin-top:16px;justify-content:center"><button class="btn" id="qsDay1">Day 1 퀘스트 받기</button></div>');
-    $('qsDay1').onclick = function () { closeModal(); window.renderConsult('diag'); nav('sc-consult'); var el = $('cBody'); if (el) el.querySelectorAll('.todo .todor').forEach(function (r, i) { r.classList.add('pop'); r.style.animationDelay = (i * .12) + 's'; }); };
+    $('qsDay1').onclick = function () { closeModal(); window.renderConsult('diag'); nav('sc-consult'); var el = $('cBody'); if (el) el.querySelectorAll('.todo .todor').forEach(function (r, i) { r.classList.add('pop'); r.style.animationDelay = (i * .12) + 's'; }); if (window.push && window.push.offer) setTimeout(function () { window.push.offer(); }, 1200); };
   }
   function confetti() {
     var c = $('qsConfetti'); if (!c) return; var ctx = c.getContext('2d'); c.style.display = 'block';
@@ -10348,7 +10365,9 @@ window.koOf = function (en) {
         intro: { body: '<p>15문항 중 1번은 언제나 자기소개입니다. 내 이야기를 한국어로 적으면 <b>프롬프트</b>를 만들어 드립니다. 쓰시는 AI에 붙여 넣고, 결과를 가져와 저장하면 한 문제는 확정입니다.</p>', hint: '자기소개 정답 만들기 — 바로 가기' },
         exam7: { body: '<p>마지막 온보딩 퀘스트입니다. 이걸 눌러야 진단이 «추측»에서 «측정»이 됩니다.</p><p>7문항, 10분. 지금 바로 눌러 주세요.</p>', hint: '7문항 축약 모의고사 — 바로 가기' }
       };
-      return { target: '#cBody [data-go="q:' + nx + '"]', pos: 'above', k: k, body: COPY[nx].body, hint: COPY[nx].hint };
+      var cp = COPY[nx];
+      if (nx === 'exam7' && window.isPro && !window.isPro()) cp = { body: '<p>자기소개까지 직접 만들었습니다 — 체험은 여기까지입니다.</p><p>다음은 그 자기소개로 보는 <b>첫 모의고사(7문항, 10분)</b>. 여기서부터 이용권 구간이고, 디데이까지 매일 퀘스트가 이어집니다.</p>', hint: '첫 모의고사 — 이용권으로 시작' };
+      return { target: '#cBody [data-go="q:' + nx + '"]', pos: 'above', k: k, body: cp.body, hint: cp.hint };
     }
     return null;
   }
@@ -10606,7 +10625,7 @@ window.koOf = function (en) {
   /* ---- 버전 줄 ---- */
   function paintVer() {
     var el = $('setVer'); if (!el) return;
-    var env = window.IS_DESKTOP ? '데스크톱' : (window.IS_MOBILE ? '모바일 웹' : '브라우저');
+    var env = window.IS_DESKTOP ? '데스크톱' : window.IS_STORE_APP ? (localStorage.getItem('opic_platform') === 'ios' ? 'iOS 앱' : 'Android 앱') : (window.IS_MOBILE ? '모바일 웹' : '브라우저');
     el.innerHTML = esc(window.APP_NAME) + ' v' + esc(window.APP_VERSION) + ' · ' + env + ' · ViBiVi Science Lab';
   }
   document.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('#btn-settings')) setTimeout(paintVer, 30); });
@@ -10692,18 +10711,22 @@ window.koOf = function (en) {
   var autoTest = navigator.webdriver && !/[?&]login/.test(location.search);   // 자동 테스트(74_auth 와 같은 규칙)에서는 로컬 모드
   var enabled = !autoTest && !!(C.url && C.anonKey && window.supabase && window.supabase.createClient);
   var cloud = window.cloud = { enabled: enabled, sb: null, lic: null, kicked: false };
+  /* 스토어 앱(Google Play / App Store) 모드: 정책상 앱 안에서 이용권 구매·구매 유도를 하지 않는다 */
+  var STORE = (function () { try { var m = location.search.match(/[?&]src=(twa|ios)/); if (m) localStorage.setItem('opic_platform', m[1] === 'twa' ? 'android' : 'ios'); return localStorage.getItem('opic_platform') || ''; } catch (e) { return ''; } })();
+  window.IS_STORE_APP = STORE === 'android' || STORE === 'ios';
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function eun(w) { w = String(w || ''); var c = w.charCodeAt(w.length - 1); if (c < 0xAC00 || c > 0xD7A3) return '은'; return (c - 0xAC00) % 28 ? '은' : '는'; }
   function fmtDate(iso) { var d = new Date(iso); return d.getFullYear() + '년 ' + (d.getMonth() + 1) + '월 ' + d.getDate() + '일'; }
 
   /* ---------- 이용권 판정 (로컬 모드 = 제한 없음) ---------- */
   window.isPro = function () { if (!enabled) return true; return !!(cloud.lic && cloud.lic.active); };
   window.proEnds = function () { return cloud.lic && cloud.lic.active ? cloud.lic.ends_at : null; };
   window.buyUrl = function () { return (C.site || '') + (C.buyPath || '/buy'); };
-  /* 체험 범위: 온보딩 전체 · «시간 벌기» 카테고리 · 오답 노트 · 7문항 축약 · 듣기 L1 */
-  window.requirePro = function (what) {
+  /* 체험 범위 = 온보딩 퀘스트 1~5 (디데이·가이드·필수표현 3개·사전 질문·자기소개). 6번째(첫 모의고사)부터 이용권. */
+  window.inTrial = function () { return !!(window.quest && !window.quest.obDone()); };
+  window.requirePro = function (what, opts) {
     if (window.isPro()) return true;
-    if (window.quest && !window.quest.obDone()) return true;   // 온보딩 중엔 전부 열림
-    paywall(what); return false;
+    paywall(what, opts || {}); return false;
   };
   /* 만료 판정: 서버가 expired 를 주거나, 이 기기에 마지막 이용권 종료일이 남아 있으면 «만료» */
   function lastEnd() { try { return localStorage.getItem('opic_lic_last') || ''; } catch (e) { return ''; } }
@@ -10714,28 +10737,45 @@ window.koOf = function (en) {
     if (le) return { s: 'expired', ends: le };
     return { s: 'none' };
   };
-  function paywall(what) {
-    var m = $('qsMask'); if (!m) { window.tell((what || '이 기능') + '은 이용권이 있어야 쓸 수 있습니다.'); return; }
+  function playOK() { return !!(window.playBilling && window.playBilling.available()); }
+  function priceText() { var p = window.playBilling && window.playBilling.price; if (playOK() && p && p.value) return Number(p.value).toLocaleString() + (p.currency === 'KRW' ? '원' : ' ' + p.currency); return Number(C.price || 112500).toLocaleString() + '원'; }
+  function buyBtnHTML(label) { if (playOK()) return '<button class="btn" id="pwBuyPlay">' + label + ' (Google Play)</button>'; if (window.IS_STORE_APP) return ''; return '<button class="btn" id="pwBuy">' + label + '</button>'; }
+  function wireBuy(m) {
+    if ($('pwBuy')) $('pwBuy').onclick = function () { openExternal(window.buyUrl()); };
+    if ($('pwBuyPlay')) $('pwBuyPlay').onclick = function () {
+      var b = $('pwBuyPlay'); b.disabled = true; b.textContent = '결제창 여는 중…';
+      window.playBilling.buy().then(function () { m.classList.remove('on'); window.toast && window.toast('이용권이 확인됐습니다. 모든 기능이 열렸습니다.'); return window.playBilling.afterPurchase(); })
+        .catch(function (e) { b.disabled = false; b.textContent = '이용권 구매하기 (Google Play)'; if (!e.cancelled) window.tell('결제를 마치지 못했습니다.\n' + (e && e.message || e)); });
+    };
+  }
+  function paywall(what, opts) {
+    opts = opts || {};
+    var m = $('qsMask'); if (!m) { window.tell((what || '이 기능') + eun(what || '이 기능') + ' 이용권이 있어야 쓸 수 있습니다.'); return; }
     var st = window.licState();
     if (st.s === 'expired') {
       m.querySelector('.modal').innerHTML = '<div style="text-align:center;padding:4px 0 6px"><div style="font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--ac)">OCANSPIC PASS</div>'
         + '<h3 style="font-size:21px;margin:8px 0 6px">이용권이 끝났습니다</h3>'
         + '<p style="color:var(--mut);margin:0 0 14px;line-height:1.7">' + esc(fmtDate(st.ends)) + '에 종료됐습니다. 학습 기록·오답 노트·시험 기록은 그대로 남아 있으니, 연장하면 바로 이어서 할 수 있습니다.<br>연장은 오늘부터 ' + (C.planDays || 90) + '일이 새로 붙습니다.</p>'
-        + '<div style="display:inline-block;border:1px solid var(--line);border-radius:14px;padding:14px 22px;background:var(--panel2)"><b style="font-size:26px;font-family:var(--mono)">' + Number(C.price || 87000).toLocaleString() + '원</b><span style="color:var(--mut)"> / ' + esc(C.planName || '3개월') + '</span></div></div>'
-        + '<div class="dctl" style="margin-top:16px;justify-content:center"><button class="btn" id="pwBuy">연장하기</button><button class="btn ghost sm" id="pwHave">이미 연장했어요</button><button class="btn ghost sm" id="pwClose">닫기</button></div>';
+        + (window.IS_STORE_APP && !playOK() ? '</div>' : '<div style="display:inline-block;border:1px solid var(--line);border-radius:14px;padding:14px 22px;background:var(--panel2)"><b style="font-size:26px;font-family:var(--mono)">' + priceText() + '</b><span style="color:var(--mut)"> / ' + esc(C.planName || '3개월') + '</span></div></div>')
+        + (window.IS_STORE_APP && !playOK() ? '<p style="color:var(--mut);font-size:13px;margin:12px 0 0">이 앱에서는 이용권을 구매·연장할 수 없습니다. 연장한 계정으로 로그인하면 이어서 할 수 있습니다.</p>' : '')
+        + '<div class="dctl" style="margin-top:16px;justify-content:center">' + buyBtnHTML('연장하기') + '<button class="btn ghost sm" id="pwHave">이미 연장했어요</button><button class="btn ghost sm" id="pwClose">닫기</button></div>';
       m.classList.add('on');
-      $('pwBuy').onclick = function () { openExternal(window.buyUrl()); };
+      wireBuy(m);
       $('pwHave').onclick = function () { $('pwHave').textContent = '확인 중…'; cloud.refreshLicense().then(function () { m.classList.remove('on'); window.toast && window.toast(window.isPro() ? '이용권이 확인됐습니다. 이어서 하세요!' : '아직 연장 내역이 없습니다. 결제한 계정으로 로그인했는지 확인해 주세요.'); }); };
       $('pwClose').onclick = function () { m.classList.remove('on'); };
       return;
     }
     m.querySelector('.modal').innerHTML = '<div style="text-align:center;padding:4px 0 6px"><div style="font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--ac)">OCANSPIC PASS</div>'
-      + '<h3 style="font-size:21px;margin:8px 0 6px">' + esc(what || '이 기능') + '은 이용권으로 열립니다</h3>'
-      + '<p style="color:var(--mut);margin:0 0 14px;line-height:1.7">체험으로는 «시간 벌기» 표현, 7문항 축약 모의고사, 듣기 L1, 오답 노트까지 쓸 수 있습니다.<br>나머지 전부 — 필수표현 1,400개, 무한 트레이닝, 듣기 L2~L5, 15문항 풀세트, 자율학습 — 은 이용권 하나로 열립니다.</p>'
-      + '<div style="display:inline-block;border:1px solid var(--line);border-radius:14px;padding:14px 22px;background:var(--panel2)"><b style="font-size:26px;font-family:var(--mono)">' + Number(C.price || 87000).toLocaleString() + '원</b><span style="color:var(--mut)"> / ' + esc(C.planName || '3개월') + '</span><div class="sub" style="margin:4px 0 0">하루 약 ' + Math.round((C.price || 87000) / (C.planDays || 90)).toLocaleString() + '원 · 카드 · 네이버페이 · 카카오페이 · 토스페이 · 무통장</div></div></div>'
-      + '<div class="dctl" style="margin-top:16px;justify-content:center"><button class="btn" id="pwBuy">이용권 구매하기</button><button class="btn ghost sm" id="pwHave">이미 구매했어요</button><button class="btn ghost sm" id="pwClose">닫기</button></div>';
+      + (opts.momentum
+        ? '<h3 style="font-size:21px;margin:8px 0 6px">여기까지가 체험, 여기서부터가 훈련입니다</h3>'
+          + '<p style="color:var(--mut);margin:0 0 14px;line-height:1.7">디데이를 잡고, 표현 3개를 통과하고, 자기소개까지 직접 만들었습니다. 이제 그 자기소개로 <b>첫 모의고사</b>를 보는 것부터 진짜 시작입니다.<br>이용권 하나로 모의고사·필수표현 1,400개·무한 트레이닝·듣기·자율학습이 전부 열리고, 오늘의 퀘스트가 디데이까지 매일 이어집니다.</p>'
+        : '<h3 style="font-size:21px;margin:8px 0 6px">' + esc(what || '이 기능') + eun(what || '이 기능') + ' 이용권으로 열립니다</h3>'
+          + '<p style="color:var(--mut);margin:0 0 14px;line-height:1.7">체험은 온보딩 퀘스트 다섯 개(디데이 · 가이드 · 필수표현 3개 · 사전 질문 · 자기소개)까지입니다.<br>그다음 — 모의고사, 필수표현 1,400개, 무한 트레이닝, 듣기, 오답 노트, 자율학습 — 은 이용권 하나로 전부 열립니다.</p>')
+      + (window.IS_STORE_APP && !playOK() ? '</div>' : '<div style="display:inline-block;border:1px solid var(--line);border-radius:14px;padding:14px 22px;background:var(--panel2)"><b style="font-size:26px;font-family:var(--mono)">' + priceText() + '</b><span style="color:var(--mut)"> / ' + esc(C.planName || '3개월') + '</span><div class="sub" style="margin:4px 0 0">' + (playOK() ? 'Google Play 결제' : '하루 약 ' + Math.round((C.price || 112500) / (C.planDays || 90)).toLocaleString() + '원 · 카드 · 네이버페이 · 카카오페이 · 토스페이 · 무통장') + '</div></div></div>')
+      + (window.IS_STORE_APP && !playOK() ? '<p style="color:var(--mut);font-size:13px;margin:12px 0 0">이 앱에서는 이용권을 구매할 수 없습니다. 이용권이 있는 계정으로 로그인하면 모든 기능이 열립니다.</p>' : '')
+      + '<div class="dctl" style="margin-top:16px;justify-content:center">' + buyBtnHTML('이용권 구매하기') + '<button class="btn ghost sm" id="pwHave">이미 구매했어요</button><button class="btn ghost sm" id="pwClose">닫기</button></div>';
     m.classList.add('on');
-    $('pwBuy').onclick = function () { openExternal(window.buyUrl()); };
+    wireBuy(m);
     $('pwHave').onclick = function () { $('pwHave').textContent = '확인 중…'; cloud.refreshLicense().then(function () { m.classList.remove('on'); window.toast && window.toast(window.isPro() ? '이용권이 확인됐습니다. 모든 기능이 열렸습니다.' : '아직 유효한 이용권이 없습니다. 결제한 계정으로 로그인했는지 확인해 주세요.'); }); };
     $('pwClose').onclick = function () { m.classList.remove('on'); };
   }
@@ -10807,6 +10847,7 @@ window.koOf = function (en) {
   function onSignedIn(u, silent) {
     var name = (u.user_metadata && (u.user_metadata.name || u.user_metadata.full_name)) || '';
     window.auth && window.auth.cloudSignedIn && window.auth.cloudSignedIn({ id: u.id, email: u.email, provider: (u.app_metadata && u.app_metadata.provider) || 'email', name: name }, silent);
+    try { document.dispatchEvent(new CustomEvent('app:signedin', { detail: { id: u.id } })); } catch (e) {}
     cloud.registerDevice().then(function () { return cloud.refreshLicense(); }).then(function () { return sync.pull(); }).then(function () { startTimers(); window.metric && window.metric('signin', { p: (u.app_metadata && u.app_metadata.provider) || 'email' }); }).catch(function (e) { console.warn('cloud init', e); });
   }
   cloud.signOut = function () { stopTimers(); return sb.auth.signOut().catch(function () {}); };
@@ -10827,7 +10868,7 @@ window.koOf = function (en) {
     el.innerHTML = st.s === 'active' ? '<b style="color:var(--ac2)">이용권 사용 중</b> · ' + esc(fmtDate(st.ends)) + '까지' + (st.days <= 7 ? ' <span style="color:var(--warn)">(' + st.days + '일 남음)</span>' : '')
       : st.s === 'expired' ? '<b style="color:var(--dan)">이용권 만료</b> · ' + esc(fmtDate(st.ends)) + ' 종료'
       : '<b style="color:var(--warn)">체험 중</b> · 이용권 없음';
-    var b = $('setBuy'); if (b) { b.style.display = st.s === 'active' && st.days > 7 ? 'none' : ''; b.textContent = st.s === 'none' ? '이용권 구매' : '연장하기'; }
+    var b = $('setBuy'); if (b) { b.style.display = ((window.IS_STORE_APP && !playOK()) || (st.s === 'active' && st.days > 7)) ? 'none' : ''; b.textContent = st.s === 'none' ? '이용권 구매' : '연장하기'; }
   }
   /* 타이틀 배너: 만료 7일 전부터, 그리고 만료 후 */
   function paintBanner() {
@@ -10837,12 +10878,13 @@ window.koOf = function (en) {
     if (st.s === 'active' && st.days <= 7) html = '<span>⏳ 이용권이 <b>' + st.days + '일 뒤</b>(' + esc(fmtDate(st.ends)) + ') 끝납니다. 남은 날짜 뒤에 ' + (C.planDays || 90) + '일이 이어 붙습니다.</span><button class="btn sm" id="licBannerBtn">연장하기</button>';
     else if (st.s === 'expired') html = '<span>⏹ 이용권이 <b>' + esc(fmtDate(st.ends)) + '</b>에 끝났습니다. 기록은 그대로 — 연장하면 바로 이어서 할 수 있습니다.</span><button class="btn sm" id="licBannerBtn">연장하기</button>';
     if (!html) return;
+    if (window.IS_STORE_APP && !playOK()) html = html.replace(/<button[^>]*>연장하기<\/button>/, '').replace('남은 날짜 뒤에 ' + (C.planDays || 90) + '일이 이어 붙습니다.', '').replace('연장하면 바로 이어서 할 수 있습니다.', '');
     var d = document.createElement('div'); d.id = 'licBanner'; d.className = 'licbanner' + (st.s === 'expired' ? ' exp' : ''); d.innerHTML = html;
     host.parentNode.insertBefore(d, host.nextSibling);
-    $('licBannerBtn').onclick = function () { openExternal(window.buyUrl()); };
+    if ($('licBannerBtn')) $('licBannerBtn').onclick = function () { if (playOK()) { window.playBilling.buy().then(function () { window.toast && window.toast('연장됐습니다.'); return window.playBilling.afterPurchase(); }).catch(function (e) { if (!e.cancelled) window.tell('결제를 마치지 못했습니다.\n' + (e && e.message || e)); }); } else openExternal(window.buyUrl()); };
   }
   document.addEventListener('opic:nav', function (e) { if (e.detail && e.detail.id === 'sc-title') paintBanner(); });
-  document.addEventListener('click', function (e) { if (e.target && e.target.id === 'setBuy') openExternal(window.buyUrl()); if (e.target && e.target.id === 'setLicRefresh') cloud.refreshLicense().then(function () { window.toast && window.toast('이용권 상태를 새로 확인했습니다.'); }); });
+  document.addEventListener('click', function (e) { if (e.target && e.target.id === 'setBuy') { if (playOK()) { $('mask').classList.remove('on'); window.playBilling.buy().then(function () { window.toast && window.toast('이용권이 확인됐습니다.'); return window.playBilling.afterPurchase(); }).catch(function (x) { if (!x.cancelled) window.tell('결제를 마치지 못했습니다.\n' + (x && x.message || x)); }); } else openExternal(window.buyUrl()); } if (e.target && e.target.id === 'setLicRefresh') cloud.refreshLicense().then(function () { window.toast && window.toast('이용권 상태를 새로 확인했습니다.'); }); });
 
   /* ---------- 기기 제한 ---------- */
   cloud.registerDevice = function () {
@@ -10936,21 +10978,143 @@ window.koOf = function (en) {
   function wrap() {
     var _startQuiz = window.startQuiz;
     window.startQuiz = function (src, judge, back, opts) {
-      var free = src === 'wrong' || (src === 'exp' && window.__expFilter && window.__expFilter.cat === 'filler');
-      if (!free && !window.requirePro(src.indexOf('custom') === 0 ? '자율학습' : '필수표현 전체')) return;
+      var free = window.inTrial() && src === 'exp' && window.__expFilter && window.__expFilter.cat === 'filler';   // 온보딩 퀘스트 3
+      if (!free && !window.requirePro(src === 'wrong' ? '오답 노트' : src.indexOf('custom') === 0 ? '자율학습' : '필수표현 전체')) return;
       return _startQuiz.apply(this, arguments);
     };
     var _startTraining = window.startTraining;
     window.startTraining = function () { if (!window.requirePro('무한 트레이닝')) return; return _startTraining.apply(this, arguments); };
     var _sll = window.startListenLevel;
-    window.startListenLevel = function (lv) { if (lv > 1 && !window.requirePro('듣기 L' + lv)) return; return _sll.apply(this, arguments); };
+    window.startListenLevel = function (lv) { if (!window.requirePro('듣기 L' + lv)) return; return _sll.apply(this, arguments); };
     var ls = $('lsStart');
     if (ls) ls.addEventListener('click', function (e) {
       var on = document.querySelector('#lsLv .lvtile.on'); var lv = on ? +on.dataset.lv : 1;
-      if (lv > 1 && !window.requirePro('듣기 L' + lv)) { e.stopImmediatePropagation(); e.preventDefault(); }
+      if (!window.requirePro('듣기 L' + lv)) { e.stopImmediatePropagation(); e.preventDefault(); }
     }, true);
   }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wrap); else wrap();
+  function wrapExam() {
+    var _q = window.startQuickExam;
+    if (_q) window.startQuickExam = function (mode) { if (!window.requirePro(mode === 'full' ? '15문항 풀세트 모의고사' : '7문항 축약 모의고사', { momentum: window.inTrial() })) return; return _q.apply(this, arguments); };
+    var bs = $('btn-start');
+    if (bs) bs.addEventListener('click', function (e) { if (!window.requirePro('모의고사', { momentum: window.inTrial() })) { e.stopImmediatePropagation(); e.preventDefault(); } }, true);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { wrap(); wrapExam(); }); else { wrap(); wrapExam(); }
+})();
+
+/* ===== 77_store.js ===== */
+/* ===== 스토어 앱 결제(Google Play Billing via Digital Goods API) · 알림(웹푸시) =====
+   - Play 정책상 안드로이드 앱 안에서 디지털 상품을 팔려면 Google Play 결제를 써야 한다. TWA 에서는 Digital Goods API + PaymentRequest 로 가능.
+     구매 → purchaseToken 을 엣지 함수 play-verify 로 보내 검증·이용권 발급 → 소비(consume) 해서 재구매(연장) 가능하게.
+   - 알림: 서비스워커 푸시 구독 → push_subs 표에 저장. 매일 저녁(CLOUD.pushHour, KST) 서버 함수 push-daily 가 문구를 골라 보낸다. */
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var C = window.CLOUD || {};
+  var PLAY = 'https://play.google.com/billing';
+
+  /* ---------- Google Play 결제 ---------- */
+  var pb = window.playBilling = {};
+  pb.available = function () {
+    try { return !!(window.IS_STORE_APP && localStorage.getItem('opic_platform') === 'android' && 'getDigitalGoodsService' in window && window.cloud && window.cloud.enabled); } catch (e) { return false; }
+  };
+  pb.price = null;
+  pb.load = function () {
+    if (!pb.available()) return Promise.resolve(null);
+    return window.getDigitalGoodsService(PLAY).then(function (svc) { return svc.getDetails([C.playSku || 'pass_3m']); })
+      .then(function (items) { var it = items && items[0]; if (it && it.price) pb.price = it.price; return it || null; }).catch(function () { return null; });
+  };
+  pb.buy = function () {
+    if (!pb.available()) return Promise.reject(new Error('Google Play 결제를 쓸 수 없는 환경입니다.'));
+    var sku = C.playSku || 'pass_3m', svc = null, token = null, resp = null;
+    return window.getDigitalGoodsService(PLAY).then(function (s) { svc = s; return s.getDetails([sku]); }).then(function (items) {
+      var it = items && items[0]; if (!it) throw new Error('상품을 찾을 수 없습니다 (' + sku + '). Play Console 의 인앱 상품이 활성 상태인지 확인하세요.');
+      var req = new PaymentRequest([{ supportedMethods: PLAY, data: { sku: sku } }], { total: { label: it.title || (C.planName || '이용권'), amount: { currency: (it.price && it.price.currency) || 'KRW', value: (it.price && it.price.value) || String(C.price || 0) } } });
+      return req.show();
+    }).then(function (r) {
+      resp = r; token = r.details && r.details.purchaseToken; if (!token) throw new Error('구매 토큰이 없습니다.');
+      return window.cloud.sb.auth.getSession();
+    }).then(function (s) {
+      var jwt = s.data && s.data.session && s.data.session.access_token; if (!jwt) throw new Error('로그인이 필요합니다.');
+      return fetch(C.url + '/functions/v1/play-verify', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + jwt, apikey: C.anonKey }, body: JSON.stringify({ purchaseToken: token, sku: sku }) }).then(function (r) { return r.json(); });
+    }).then(function (d) {
+      if (d.error) throw new Error(d.error);
+      return svc.consume(token).catch(function () {}).then(function () { return resp.complete('success'); }).then(function () { return window.cloud.refreshLicense(); }).then(function () { return d; });
+    }).catch(function (e) {
+      if (resp) { try { resp.complete('fail'); } catch (x) {} }
+      if (e && (e.name === 'AbortError' || /cancel/i.test(e.message || ''))) { var ce = new Error('cancel'); ce.cancelled = true; throw ce; }
+      throw e;
+    });
+  };
+  /* 결제 직후 안내 (앱에서 구매한 사람에게 데스크톱 권유) */
+  pb.afterPurchase = function () {
+    window.metric && window.metric('purchase', { via: 'play' });
+    return window.tell('오캔스픽은 데스크톱에서 해야 100% 진가를 발휘합니다.\n당장 컴퓨터를 켜고, 홈페이지에서 데스크톱용을 설치해주시길 바랍니다.\n공부환경 설정을 위한 것이니 간곡히 부탁드립니다.', '알겠습니다');
+  };
+
+  /* ---------- 웹푸시 알림 ---------- */
+  var push = window.push = {};
+  function b64ToU8(b) { var p = '='.repeat((4 - b.length % 4) % 4), s = (b + p).replace(/-/g, '+').replace(/_/g, '/'), r = atob(s), a = new Uint8Array(r.length); for (var i = 0; i < r.length; i++) a[i] = r.charCodeAt(i); return a; }
+  push.supported = function () { return !!('serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window && C.vapidPublic && window.cloud && window.cloud.enabled && !window.IS_DESKTOP); };
+  push.state = function () { return !push.supported() ? 'unsupported' : Notification.permission; };   // 'default' | 'granted' | 'denied'
+  push.enabled = function () { try { return localStorage.getItem('opic_push_on') === '1' && Notification.permission === 'granted'; } catch (e) { return false; } };
+  /* 서버에 보낼 개인 상태: 이름·디데이·연속 공부일·연속 휴식일 */
+  push.snapshot = function () {
+    var st = window.studyTime, dd = window.dday;
+    var streak = st ? st.streak() : 0, rest = 0;
+    if (st && st.total() > 0) { var days = st.days(30).reverse(); for (var i = 0; i < days.length; i++) { if (days[i].sec >= 300) break; rest++; } }
+    return { name: (window.auth && window.auth.name()) || '', dday: dd && dd.days ? dd.days() : null, streak: streak, rest: rest, ob: !!(window.quest && window.quest.obDone()), at: new Date().toISOString() };
+  };
+  function save(sub) {
+    var u = window.cloud.user(); if (!u) return Promise.resolve(false);
+    var j = sub.toJSON ? sub.toJSON() : sub;
+    return window.cloud.sb.from('push_subs').upsert({ user_id: u.id, endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, tz: 'Asia/Seoul', hour: C.pushHour || 20, state: push.snapshot(), updated_at: new Date().toISOString() }, { onConflict: 'endpoint' })
+      .then(function (r) { if (r.error) { console.warn('push save', r.error); return false; } return true; });
+  }
+  push.enable = function () {
+    if (!push.supported()) return Promise.resolve(false);
+    return Notification.requestPermission().then(function (perm) {
+      if (perm !== 'granted') return false;
+      return navigator.serviceWorker.ready.then(function (reg) {
+        return reg.pushManager.getSubscription().then(function (s) { return s || reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToU8(C.vapidPublic) }); });
+      }).then(save).then(function (ok) { if (ok) { try { localStorage.setItem('opic_push_on', '1'); } catch (e) {} window.metric && window.metric('push_on'); } return ok; });
+    }).catch(function (e) { console.warn('push enable', e); return false; });
+  };
+  push.disable = function () {
+    try { localStorage.setItem('opic_push_on', '0'); } catch (e) {}
+    if (!push.supported()) return Promise.resolve(true);
+    return navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); }).then(function (s) {
+      if (!s) return true; var ep = s.endpoint;
+      return s.unsubscribe().then(function () { return window.cloud.sb.from('push_subs').delete().eq('endpoint', ep); }).then(function () { return true; });
+    }).catch(function () { return true; });
+  };
+  /* 앱을 열 때마다 상태 갱신 (서버 문구 선택용) */
+  push.sync = function () {
+    if (!push.enabled() || !push.supported()) return;
+    navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); }).then(function (s) { if (s) save(s); }).catch(function () {});
+  };
+  /* 온보딩 완료 후 권유 */
+  push.offer = function () {
+    if (!push.supported() || Notification.permission !== 'default') return Promise.resolve(false);
+    try { if (localStorage.getItem('opic_push_asked') === '1') return Promise.resolve(false); localStorage.setItem('opic_push_asked', '1'); } catch (e) {}
+    return window.ask('진짜 공부 제대로 해보겠다면 앱의 알림을 켜두십시오.\n매일 저녁 ' + (C.pushHour || 20) + '시, 딱 한 번 울립니다.', '알림 켜기', '나중에').then(function (ok) {
+      if (!ok) return false;
+      return push.enable().then(function (on) { window.toast && window.toast(on ? '알림을 켰습니다. 매일 저녁 ' + (C.pushHour || 20) + '시에 봅니다.' : '알림을 켜지 못했습니다. 설정에서 다시 켤 수 있습니다.'); return on; });
+    });
+  };
+
+  /* ---------- 설정 화면: 알림 스위치 ---------- */
+  function paintSetting() {
+    var row = $('setPushRow'); if (!row) return;
+    if (!push.supported()) { row.style.display = 'none'; return; }
+    row.style.display = '';
+    var sw = $('setPush'); if (sw) sw.checked = push.enabled();
+    var info = $('setPushInfo'); if (info) info.textContent = Notification.permission === 'denied' ? '브라우저/앱 설정에서 알림이 차단되어 있습니다.' : ('매일 저녁 ' + (C.pushHour || 20) + '시 한 번');
+  }
+  document.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('#btn-settings')) setTimeout(paintSetting, 40); });
+  var sw = $('setPush'); if (sw) sw.addEventListener('change', function () { var on = this.checked; (on ? push.enable() : push.disable()).then(function (ok) { paintSetting(); if (on && !ok) window.tell('알림을 켜지 못했습니다. 기기 설정에서 오캔스픽 알림이 허용되어 있는지 확인해 주세요.'); }); });
+
+  document.addEventListener('app:signedin', function () { setTimeout(push.sync, 3000); pb.load(); });
+  document.addEventListener('opic:commit', function () { clearTimeout(window.__pushSync); window.__pushSync = setTimeout(push.sync, 30000); });
 })();
 
 </script>
