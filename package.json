@@ -1,0 +1,127 @@
+{
+  "name": "ocanspic-desktop",
+  "productName": "OCansPic",
+  "version": "1.0.1",
+  "description": "오캔스픽 — 오픽 IH 2주 스피킹 트레이너 (데스크톱)",
+  "main": "main.js",
+  "author": "ViBiVi Science Lab <wichonl@vibivi.co.kr>",
+  "homepage": "https://www.vibivi.co.kr/ocanspic",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "sync": "node sync.js",
+    "start": "npm run sync && electron .",
+    "pack": "npm run sync && electron-builder --dir",
+    "dist": "npm run sync && electron-builder",
+    "dist:win": "npm run sync && electron-builder --win",
+    "dist:mac": "npm run sync && electron-builder --mac",
+    "release": "npm run sync && electron-builder --publish always"
+  },
+  "dependencies": {
+    "electron-updater": "^6.6.2",
+    "sherpa-onnx-node": "1.13.8",
+    "tar": "^7.5.22",
+    "unbzip2-stream": "^1.4.3"
+  },
+  "devDependencies": {
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "kr.co.vibivi.ocanspic",
+    "productName": "OCansPic",
+    "copyright": "© 2026 ViBiVi Science Lab",
+    "artifactName": "OCansPic-${os}-${arch}.${ext}",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "engine.js",
+      "models.js",
+      "renderer/**",
+      "build/icon.png",
+      "!node_modules/sherpa-onnx-node/**/*.md"
+    ],
+    "asarUnpack": [
+      "node_modules/sherpa-onnx-node/**",
+      "node_modules/sherpa-onnx-*/**"
+    ],
+    "npmRebuild": false,
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "theshin22world-art",
+        "repo": "ocanspic-desktop"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "shortcutName": "오캔스픽",
+      "createDesktopShortcut": true,
+      "language": "1042",
+      "installerLanguages": [
+        "ko_KR",
+        "en_US"
+      ]
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "category": "public.app-category.education",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "말하기 채점과 녹음을 위해 마이크를 사용합니다."
+      },
+      "notarize": true
+    },
+    "dmg": {
+      "sign": false
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Education"
+    },
+    "protocols": [
+      {
+        "name": "OCansPic",
+        "schemes": [
+          "ocanspic"
+        ]
+      }
+    ]
+  }
+}
