@@ -1,7 +1,7 @@
 {
   "name": "ocanspic-desktop",
   "productName": "OCansPic",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "오캔스픽 — 오픽 IH 2주 스피킹 트레이너 (데스크톱)",
   "main": "main.js",
   "author": "ViBiVi Science Lab <wichonl@vibivi.co.kr>",
