@@ -69,6 +69,13 @@
   NativeSR.prototype._teardown = function () {
     try { if (this._node) { this._node.disconnect(); this._node.onaudioprocess = null; } if (this._src) this._src.disconnect(); } catch (e) {}
     this._node = null; this._src = null; this._sid = 0; this._started = false;
+    /* 살아 있는 인식 세션이 하나도 없으면 마이크를 실제로 반납한다 (정답 화면에서 마이크 표시가 꺼지도록) */
+    var self = this;
+    setTimeout(function () {
+      if (Object.keys(live).length) return;
+      try { if (micStream) micStream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {}
+      micStream = null;
+    }, 50);
   };
   NativeSR.prototype.stop = function () { if (!this._sid) return; this._stopping = true; O.stt.stop(this._sid); };
   NativeSR.prototype.abort = function () { if (!this._sid) return; var sid = this._sid; this._stopping = true; O.stt.abort(sid); };
