@@ -928,7 +928,7 @@ html[data-theme="light"] img.wm-dark{display:none}html[data-theme="light"] img.w
         <input type="email" id="lgEmail" placeholder="이메일 주소" autocomplete="email">
         <button class="btn" id="lgEmailGo">계속</button>
       </div>
-      <p class="lg-foot">로그인하면 진도·오답 노트·시험 기록이 계정에 저장됩니다.<br><a href="https://www.vibivi.co.kr/ocanspic/terms" target="_blank" rel="noopener">이용약관</a> · <a href="https://www.vibivi.co.kr/ocanspic/privacy" target="_blank" rel="noopener">개인정보처리방침</a> · ViBiVi Science Lab</p>
+      <p class="lg-foot">로그인하면 진도·오답 노트·시험 기록이 계정에 저장됩니다.<br><a href="https://www.ocanspic.com/terms" target="_blank" rel="noopener">이용약관</a> · <a href="https://www.ocanspic.com/privacy" target="_blank" rel="noopener">개인정보처리방침</a> · ViBiVi Science Lab</p>
     </div>
   </section>
 
@@ -1174,7 +1174,7 @@ html[data-theme="light"] img.wm-dark{display:none}html[data-theme="light"] img.w
       </button>
     </div>
     <div class="lstat" id="learnStat"></div>
-    <div class="legal"><a href="https://www.vibivi.co.kr/ocanspic/terms" target="_blank" rel="noopener">이용약관</a><span>·</span><a href="https://www.vibivi.co.kr/ocanspic/privacy" target="_blank" rel="noopener">개인정보처리방침</a></div>
+    <div class="legal"><a href="https://www.ocanspic.com/terms" target="_blank" rel="noopener">이용약관</a><span>·</span><a href="https://www.ocanspic.com/privacy" target="_blank" rel="noopener">개인정보처리방침</a></div>
   </section>
 
   <!-- ===== 컨설팅 ===== -->
@@ -1853,8 +1853,11 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 /* ===== 08_version.js ===== */
 /* ===== 버전 · 변경 내역 ===== */
 window.APP_NAME = '오캔스픽';
-window.APP_VERSION = '1.0.4';
+window.APP_VERSION = '1.0.5';
 window.CHANGELOG = [
+  { v: '1.0.5', d: '2026-09-17', items: [
+    '공식 홈페이지 주소가 www.ocanspic.com 으로 바뀌었습니다 — 약관·개인정보처리방침 링크 갱신'
+  ] },
   { v: '1.0.4', d: '2026-09-16', items: [
     '퀴즈·트레이닝·듣기: 정답이 뜨는 순간 인식기·녹음기·마이크를 실제로 끕니다 (마이크 표시가 켜져 있던 문제)',
     '녹음 중 사운드바가 목소리에 반응하도록 수정 (데스크톱 포함)',
@@ -1900,7 +1903,7 @@ window.CHANGELOG = [
 window.CLOUD = {
   url: 'https://foumovwrenrydfnutlpl.supabase.co',
   anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZvdW1vdndyZW5yeWRmbnV0bHBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkxMTU2NTQsImV4cCI6MjEwNDY5MTY1NH0.AJ89jl_v-PITF1I9pVm7uT7XjCHLUUKz_pTuQJwAMpQ',
-  site: 'https://www.vibivi.co.kr/ocanspic',
+  site: 'https://www.ocanspic.com',
   buyPath: '/buy',    // 결제 페이지 (사이트)
   naver: false,       // 네이버 로그인 (출시 후 추가 예정 — true 로 바꾸면 버튼이 살아난다)
   apple: false,       // Apple 로그인 (Apple 팀 승인 뒤 Supabase 설정 후 true)
@@ -11451,7 +11454,7 @@ window.koOf = function (en) {
   /* 결제 직후 안내 (앱에서 구매한 사람에게 데스크톱 권유) */
   pb.afterPurchase = function () {
     window.metric && window.metric('purchase', { via: 'play' });
-    return window.tell('오캔스픽은 데스크톱 사용에 최적화되어 있습니다.\n고급 음성(고품질 원어민 TTS)도 데스크톱에서만 들을 수 있습니다.\n홈페이지(vibivi.co.kr/ocanspic)에서 데스크톱용을 설치하고, 이 계정으로 로그인하면 진도가 그대로 이어집니다.', '알겠습니다');
+    return window.tell('오캔스픽은 데스크톱 사용에 최적화되어 있습니다.\n고급 음성(고품질 원어민 TTS)도 데스크톱에서만 들을 수 있습니다.\n홈페이지(www.ocanspic.com)에서 데스크톱용을 설치하고, 이 계정으로 로그인하면 진도가 그대로 이어집니다.', '알겠습니다');
   };
 
   /* ---------- 웹푸시 알림 ---------- */
