@@ -125,11 +125,11 @@
       }
     ],
     "appx": {
-      "identityName": "REPLACE.FromPartnerCenter",
-      "publisher": "CN=REPLACE-FROM-PARTNER-CENTER",
+      "identityName": "ViBiViScienceLab.OCansPic",
+      "publisher": "CN=5B5A621C-82C4-4259-8007-A0900B0180ED",
       "publisherDisplayName": "ViBiVi Science Lab",
       "applicationId": "OCansPic",
-      "displayName": "오캔스픽 OCansPic",
+      "displayName": "OCansPic",
       "backgroundColor": "#20213B",
       "languages": [
         "ko-KR",
