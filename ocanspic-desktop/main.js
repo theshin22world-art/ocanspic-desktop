@@ -101,7 +101,8 @@ function setupUpdater() {
       sendR('app:update-ready', { version: info.version });
     });
     ipcMain.handle('app:installUpdate', () => autoUpdater.quitAndInstall());
-    if (app.isPackaged) autoUpdater.checkForUpdatesAndNotify().catch(() => {});
+    /* Microsoft Store(appx) 설치본은 스토어가 업데이트를 맡는다 — GitHub 릴리스 확인 안 함 */
+    if (app.isPackaged && !process.windowsStore) autoUpdater.checkForUpdatesAndNotify().catch(() => {});
   } catch (e) {}
 }
 

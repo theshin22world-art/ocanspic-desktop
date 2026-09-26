@@ -1,7 +1,7 @@
 {
   "name": "ocanspic-desktop",
   "productName": "OCansPic",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "오캔스픽 — 오픽 IH 2주 스피킹 트레이너 (데스크톱)",
   "main": "main.js",
   "author": "ViBiVi Science Lab <wichonl@vibivi.co.kr>",
@@ -15,7 +15,8 @@
     "dist": "npm run sync && electron-builder",
     "dist:win": "npm run sync && electron-builder --win",
     "dist:mac": "npm run sync && electron-builder --mac",
-    "release": "npm run sync && electron-builder --publish always"
+    "release": "npm run sync && electron-builder --publish always",
+    "dist:store": "npm run sync && electron-builder --win appx --publish never"
   },
   "dependencies": {
     "electron-updater": "^6.6.2",
@@ -122,6 +123,19 @@
           "ocanspic"
         ]
       }
-    ]
+    ],
+    "appx": {
+      "identityName": "REPLACE.FromPartnerCenter",
+      "publisher": "CN=REPLACE-FROM-PARTNER-CENTER",
+      "publisherDisplayName": "ViBiVi Science Lab",
+      "applicationId": "OCansPic",
+      "displayName": "오캔스픽 OCansPic",
+      "backgroundColor": "#20213B",
+      "languages": [
+        "ko-KR",
+        "en-US"
+      ],
+      "showNameOnTiles": true
+    }
   }
 }
