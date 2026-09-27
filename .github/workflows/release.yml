@@ -15,10 +15,10 @@ jobs:
         include:
           - os: windows-latest
             cmd: npx electron-builder --win --publish always
-          - os: macos-latest
+          - os: macos-14           # macOS 26(latest) 러너에서는 electron-builder 25 의 임시 키체인 생성이 실패(set-key-partition-list) → Sonoma 고정
             cmd: npx electron-builder --mac --publish always
     runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ matrix.os == 'macos-latest' }}   # Apple 인증서가 아직 없으면 mac 만 실패로 두고 릴리스는 진행
+    continue-on-error: ${{ startsWith(matrix.os, 'macos') }}   # Apple 인증서가 아직 없으면 mac 만 실패로 두고 릴리스는 진행
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
