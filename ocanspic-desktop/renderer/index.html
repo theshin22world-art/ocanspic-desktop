@@ -101,7 +101,7 @@ button:disabled{cursor:not-allowed}
 .lv.sel .n{background:var(--acbg);color:var(--actx)}
 .lv b{font-size:14.5px;display:block}
 .lv p{margin:4px 0 0;color:var(--mut);font-size:12.8px;line-height:1.6}
-.lv .tag{position:absolute;right:14px;top:14px;font-size:10.5px;padding:3px 8px;border-radius:99px;
+.lv .tag{position:static;flex:none;align-self:flex-start;margin-top:1px;font-size:10.5px;padding:3px 8px;border-radius:99px;
   border:1px solid var(--line);color:var(--dim)}
 .lv.sel .tag,.lv.rec .tag{border-color:var(--ac2);color:var(--ac2)}
 
@@ -852,10 +852,10 @@ html.mob.storeapp #cBack,html.mob.storeapp #gBack,html.mob.storeapp #tsBack,html
 .qmark:hover{color:var(--tx);border-color:var(--mut)}
 /* 스토어 앱(iOS·Android): 아이폰엔 뒤로가기 키가 없으므로 «← 학습 모드» 를 동그라미 ← 아이콘으로 */
 .phd{position:relative}
-html.storeapp .pback{position:absolute;right:0;top:-8px;width:30px;height:30px;padding:0;border:0;border-radius:50%;background:#efedf7;color:#5f5680;font-size:0;line-height:0;display:inline-grid;place-items:center;flex:none;margin:0}
-html.storeapp .pback::before{content:'';display:block;width:15px;height:15px;background:currentColor;-webkit-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'><path d='M19 12H5'/><path d='M12 19l-7-7 7-7'/></svg>") center/contain no-repeat;mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'><path d='M19 12H5'/><path d='M12 19l-7-7 7-7'/></svg>") center/contain no-repeat}
+html.storeapp .pback{position:relative;width:32px;height:32px;padding:0;border:0;border-radius:50%;background:#efedf7;color:#5f5680;font-size:0;line-height:0;display:inline-grid;place-items:center;flex:none;margin:0}
+html.storeapp .pback::before{content:'';display:block;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:15px;height:15px;background:currentColor;-webkit-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'><path d='M19.6 12H6.2'/><path d='M12.2 18.2 6 12l6.2-6.2'/></svg>") center/contain no-repeat;mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'><path d='M19.6 12H6.2'/><path d='M12.2 18.2 6 12l6.2-6.2'/></svg>") center/contain no-repeat}
 html[data-theme="dark"].storeapp .pback,html:not([data-theme]).storeapp .pback{background:rgba(255,255,255,.07);color:var(--mut)}
-html.storeapp .phd.nb .pback{top:6px}
+html.storeapp .pht{flex-wrap:nowrap}html.storeapp .pht .phtitle{min-width:0}
 .qpop{position:relative;display:inline-block;vertical-align:middle}
 .qpop-box{display:none;position:absolute;left:0;top:calc(100% + 8px);z-index:30;width:min(360px,calc(100vw - 48px));padding:11px 13px;border-radius:12px;border:1px solid var(--line);background:var(--panel);box-shadow:0 12px 32px -12px rgba(0,0,0,.35);font-size:13px;font-weight:400;line-height:1.7;color:var(--mut);text-align:left;letter-spacing:0}
 .qpop-box.on{display:block}.qpop-box b{color:var(--tx)}
@@ -1313,6 +1313,8 @@ html[data-theme="light"] .lvg{--lvg-track:#DDE0EA}html:not([data-theme="light"])
 .spai .gspin{display:inline-block;vertical-align:middle;margin-right:6px}
 .prenav{display:flex;gap:8px}.prenav .btn{padding:7px 13px}
 #dlgYes,#dlgNo{padding:6px 13px;font-size:13px;line-height:1.3;border:1px solid var(--line);min-width:78px;height:31px;box-sizing:border-box}#dlgYes{border-color:transparent}
+
+html.storeapp body{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html.storeapp #qsEnd.obend{top:calc(env(safe-area-inset-top,0px) + 10px)}html.storeapp .fab{bottom:calc(20px + env(safe-area-inset-bottom,0px))}html.storeapp .fab.goalfab{bottom:calc(78px + env(safe-area-inset-bottom,0px))}html.storeapp .qstoast{bottom:calc(28px + env(safe-area-inset-bottom,0px))}
 </style>
 
 </head>
@@ -1381,7 +1383,7 @@ html[data-theme="light"] .lvg{--lvg-track:#DDE0EA}html:not([data-theme="light"])
     <div id="envWarn" style="max-width:520px;margin:18px auto 0"></div>
     <div class="foot">
       목표 등급 <b style="color:var(--ac2)">IH</b> 기준으로 난이도 4·5만 응시할 수 있도록 설정되어 있습니다.<br>
-      모든 기록은 이 브라우저에만 저장되며 외부로 전송되지 않습니다.
+      <span id="footStore">모든 기록은 이 브라우저에만 저장되며 외부로 전송되지 않습니다.</span>
     </div>
   </section>
 
@@ -7419,7 +7421,7 @@ window.koOf = function (en) {
   var KEYS = ['opic_sim_v1', 'opic_hist', 'opic_topichist', 'opic_train_v1',
     'opic_check', 'opic_wrong_v1', 'opic_quizstat_v1', 'opic_exp_v1', 'opic_custom_v1', 'opic_study_v1', 'opic_listen_v1',
     'opic_quest_v1', 'opic_metrics_v1', 'opic_ob_v1', 'opic_myans_v1', 'opic_train_ob_v1',
-    'opic_goal_v1', 'opic_goal_level', 'opic_wlnote_seen', 'opic_wlnote_hide', 'opic_myans_tips', 'opic_lic_last'];   // 계정 데이터 전부 (기기 설정 · 녹음 · 로그인 기록만 기기에 남음)   // 계정(opic_auth_v1)은 기기 간 이동 대상이 아니라 제외
+    'opic_goal_v1', 'opic_goal_level', 'opic_wlnote_seen', 'opic_wlnote_hide', 'opic_myans_tips', 'opic_lic_last', 'opic_ai_ok'];   // 계정 데이터 전부 (기기 설정 · 녹음 · 로그인 기록만 기기에 남음)   // 계정(opic_auth_v1)은 기기 간 이동 대상이 아니라 제외
   window.PROGRESS_KEYS = KEYS;
 
   window.exportProgress = function () {
@@ -8102,7 +8104,7 @@ window.koOf = function (en) {
     window.__modeOnce = null;
     var obEx = !!window.__obExamOnce; window.__obExamOnce = false;
     var items = window.buildExam(S.get().survey, mode, st.difficulty);
-    if (window.ttsPack) { var tps = {}; items.forEach(function (it) { if (it.topic) tps['q/' + it.topic] = 1; if (/^rp_/.test(it.type || '')) tps['q/_roleplay'] = 1; }); window.ttsPack.ensure(Object.keys(tps), { toast: false }); }
+    if (window.ttsPack) { var tps = { 'q/_intro': 1 }; items.forEach(function (it) { if (it.topic) tps['q/' + it.topic] = 1; if (/^rp_/.test(it.type || '')) tps['q/_roleplay'] = 1; }); window.ttsPack.ensure(Object.keys(tps), { toast: false }); }
     EX = {
       id: 'S' + Date.now(), items: items, i: 0, mode: mode, difficulty: st.difficulty,
       startedAt: new Date().toISOString(),
@@ -12162,6 +12164,8 @@ window.koOf = function (en) {
   var C = window.CLOUD || {};
   var autoTest = navigator.webdriver && !/[?&]login/.test(location.search);   // 자동 테스트(74_auth 와 같은 규칙)에서는 로컬 모드
   var enabled = !autoTest && !!(C.url && C.anonKey && window.supabase && window.supabase.createClient);
+  /* 첫 화면 하단 안내: 계정 저장(서버 동기화) 모드에서는 «이 브라우저에만» 문구가 사실과 다르므로 바꾼다 */
+  if (enabled) { var footFix = function () { var e = document.getElementById('footStore'); if (e) e.textContent = '로그인하면 학습 기록이 내 계정에 저장되어 다른 기기에서도 이어집니다.'; }; if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', footFix); else footFix(); }
   var cloud = window.cloud = { enabled: enabled, sb: null, lic: null, kicked: false };
   /* 스토어 앱(Google Play / App Store) 모드: 정책상 앱 안에서 이용권 구매·구매 유도를 하지 않는다 */
   var STORE = (function () { try { var m = location.search.match(/[?&]src=(twa|ios)/); if (m) localStorage.setItem('opic_platform', m[1] === 'twa' ? 'android' : 'ios'); return localStorage.getItem('opic_platform') || ''; } catch (e) { return ''; } })();
@@ -12247,6 +12251,9 @@ window.koOf = function (en) {
   /* 결제 박스: 월 환산 크게 + 일시 결제 안내 + 버튼들(btns = 버튼 HTML) */
   function pwPay(btns) {
     var pi = priceInfo(), noBuy = window.IS_STORE_APP && !playOK();
+    /* iOS: 실제 결제 금액(3개월 총액)을 가장 크게 (App Store 3.1.2 · 청구 금액이 가장 눈에 띄어야 함) */
+    if (!noBuy && isIOS() && pi.play) return '<div class="pwx-pay"><div class="pwx-big"><span class="pwx-grad">' + wonS(pi.total) + '</span><span class="pwx-won">원</span><span class="pwx-per">/ ' + pi.months + '개월</span></div>'
+      + '<div class="pwx-note">*월 ' + wonS(pi.monthly) + '원 꼴 · 자동 갱신 없음 · App Store 결제</div><div class="pwx-btns">' + btns + '</div></div>';
     var head = noBuy ? '' : '<div class="pwx-big"><span class="pwx-grad">' + wonS(pi.monthly) + '</span><span class="pwx-won">원</span><span class="pwx-per">/ 1개월</span></div>'
       + '<div class="pwx-note">*' + pi.months + '개월 이용권 ' + wonS(pi.total) + '원 일시 결제 · ' + (pi.play ? storeName() + ' 결제' : '카드 · 네이버페이 · 카카오페이 · 토스페이 · 무통장') + '</div>';
     return '<div class="pwx-pay">' + head + (noBuy ? '<div class="pwx-store">이 앱에서는 이용권을 구매할 수 없습니다. 이용권이 있는 계정으로 로그인하면 모든 기능이 열립니다.</div>' : '')
@@ -13671,13 +13678,16 @@ window.koOf = function (en) {
     });
   };
   var LB = { fluency: '유창성', delivery: '발음 명료도', vocab: '어휘', grammar: '구조 · 문법', content: '내용 전개', natural: '자연스러움' };
+  /* 외부 AI(DeepSeek)로 전사 텍스트를 보내기 전 1회 동의 (App Store 5.1.2(i) · 개인정보 국외 이전) */
+  function aiOK() { try { return localStorage.getItem('opic_ai_ok') === '1'; } catch (e) { return false; } }
+  var AI_ASK = '<b>AI 채점을 하려면 한 번만 동의가 필요합니다.</b><br>답변을 글자로 바꾼 내용(전사 텍스트)과 문항 · 지표가 채점을 위해 외부 AI 서비스 <b>DeepSeek</b>(중국 사업자)로 전송됩니다. 음성 파일 · 이메일 · 이름은 보내지 않습니다.<br><span class="sub">동의하지 않아도 위의 기기 채점 결과는 그대로 볼 수 있습니다.</span>';
   window.aiGradeCard = function (sess) {
     if (!aiEnabled() && !sess.ai) return '';
     var a = sess.ai;
     if (!a) {
       return '<div class="card" id="aiCard"><div class="hd"><h2>AI 채점</h2><span class="pill" id="aiState">대기 중</span></div>'
-        + '<div class="note blue" id="aiBody">AI 채점 대기 중: 위 지표는 기기에서 먼저 계산한 값입니다. AI가 답변 내용을 읽고 등급·피드백·해설을 붙이면 여기에 표시됩니다.</div>'
-        + '<div class="row" style="margin-top:12px"><button class="btn sm" id="aiRun">AI 채점 시작</button></div></div>';
+        + '<div class="note blue" id="aiBody">' + (aiOK() ? 'AI 채점 대기 중: 위 지표는 기기에서 먼저 계산한 값입니다. AI가 답변 내용을 읽고 등급·피드백·해설을 붙이면 여기에 표시됩니다.' : AI_ASK) + '</div>'
+        + '<div class="row" style="margin-top:12px"><button class="btn sm" id="aiRun">' + (aiOK() ? 'AI 채점 시작' : '동의하고 AI 채점') + '</button>' + (aiOK() ? '' : '<button class="btn sm ghost" id="aiNo">안 할래요</button>') + '</div></div>';
     }
     var h = '<div class="card" id="aiCard"><div class="hd"><h2>AI 채점</h2><span class="lvtag a">AI 채점 완료</span></div>';
     h += '<div class="stats">' + stat(esc(a.level || '-'), 'AI 추정 등급') + stat(a.overall != null ? a.overall : '-', 'AI 종합') + stat(a.overall != null ? (a.overall >= 76 ? '도달' : (76 - a.overall) + '점') : '-', 'IH까지 남음') + '</div>';
@@ -13703,8 +13713,12 @@ window.koOf = function (en) {
         run.disabled = false; run.textContent = '다시 시도';
       });
     };
-    run.onclick = go;
-    if (!sess.ai && !sess.__aiTried && aiEnabled()) { sess.__aiTried = true; go(); }
+    run.onclick = function () {
+      if (!aiOK()) { try { localStorage.setItem('opic_ai_ok', '1'); } catch (e) {} var n = $('aiNo'); if (n) n.remove(); }
+      go();
+    };
+    var no = $('aiNo'); if (no) no.onclick = function () { var c = $('aiCard'); if (c) c.remove(); };
+    if (aiOK() && !sess.ai && !sess.__aiTried && aiEnabled()) { sess.__aiTried = true; go(); }
   };
 
   /* ================= 스타일 ================= */
