@@ -2101,6 +2101,11 @@ html[data-theme="light"] .lvg{--lvg-track:#DDE0EA}html:not([data-theme="light"])
     } catch (e) {}
     try { indexedDB.deleteDatabase('opic_audio'); } catch (e) {}
   }
+  /* 서버에서 받은 학습 기록을 새로고침 뒤 가장 먼저 다시 쓴다 (76_cloud apply) */
+  try {
+    var ap = sessionStorage.getItem('opic__apply');
+    if (ap) { var o = JSON.parse(ap); Object.keys(o).forEach(function (k) { try { localStorage.setItem(k, o[k]); } catch (e) {} }); sessionStorage.removeItem('opic__apply'); }
+  } catch (e) {}
   var mode = null;
   try { mode = localStorage.getItem('opic__wipe'); } catch (e) {}
   if (mode) { wipe(mode); try { localStorage.removeItem('opic__wipe'); } catch (e) {} }
@@ -2260,9 +2265,9 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 /* ===== 08_version.js ===== */
 /* ===== 버전 · 변경 내역 ===== */
 window.APP_NAME = '오캔스픽';
-window.APP_VERSION = '1.2.0';
+window.APP_VERSION = '1.2.1';
 window.CHANGELOG = [
-  { v: '1.2.0', d: '2026-09-29', items: [
+  { v: '1.2.1', d: '2026-09-29', items: [
     '이용권 안내 새 디자인(강남 학원 vs 오캔스픽 비교). 체험(첫날 온보딩)이 끝나면 이용권이 있어야 기능이 열립니다',
     '같은 기기에서도 계정마다 학습 기록·디데이·설정이 따로 저장됩니다. 계정 삭제 시 서버와 기기의 데이터를 모두 지웁니다',
     '온보딩: 사전 설문 뒤 안내, 자기소개 완성 축하, 첫 모의고사는 끝까지(7문항 25분) · «이 문항 건너뛰기» 삭제',
@@ -2270,7 +2275,9 @@ window.CHANGELOG = [
     '학습교재: 탭이 권장 순서대로 열립니다 · «IH 도달을 위한 핵심 원칙»을 등급·채점 탭으로 이동',
     '나만의 답안: 한 번 만들어 여러 주제에 돌려 쓰는 요령',
     '앱: 질문·모범답안을 고품질 음성으로 재생(음성 팩 자동 설치)',
-    '모의고사 결과 화면 모션 · 오늘의 다짐 닫기(X) · 디데이 플립과 달력 모바일 정리'
+    '모의고사 결과 화면 모션 · 오늘의 다짐 닫기(X) · 디데이 플립과 달력 모바일 정리',
+    '학습 기록을 서버에 바로바로 저장: 폰 · 태블릿 · PC 어디서 로그인해도 이어서 공부합니다',
+    '아이패드·아이폰에서 디데이 카운터가 찌그러져 보이던 문제, Day 2 안내가 반복되던 문제 수정'
   ] },
   { v: '1.1.1', d: '2026-09-26', items: [
     '새 색 구성(다크·라이트) · 설정 첫 화면 · 학습교재/컨설팅 헤더에 플립 디데이 · 온보딩 스포트라이트 가볍게',
@@ -2352,7 +2359,7 @@ window.CLOUD = {
   ttsBase: '',        // 고품질 음성 팩 위치 (비우면 <url>/storage/v1/object/public/tts/v1/)
   apple: false,       // Apple 로그인 (Apple 팀 승인 뒤 Supabase 설정 후 true)
   maxDevices: 2,
-  reviewEmails: ['appreview@vibivi.co.kr'],   // 앱 심사용 계정: 이 주소만 이메일 코드 대신 비밀번호로 로그인 (Supabase 에서 비밀번호 사용자로 직접 생성)
+  reviewEmails: ['happycat@vibivi.co.kr'],   // 앱 심사용 계정: 이 주소만 이메일 코드 대신 비밀번호로 로그인 (Supabase 에서 비밀번호 사용자로 직접 생성)
   playSku: 'plus_3m',              // 앱 안 기본 상품 = 오캔플러스 (Play Console 에 같은 ID · 160,000원). dyn_3m(233,700) · up_dyn(30,000) 은 AL·영숙어 페이지가 생기면 앱 안에서 노출
   vapidPublic: 'BHC4YqEAptlfwwCFv6Gx2_BbJaG55AF8ebFossqKfMNbw4PUDW90Tpt70WZptgQJ59ccbbcvLHiZ9Mki6rxjdd4',   // 웹푸시 공개키 (비밀키는 Supabase 함수 시크릿 VAPID_PRIVATE_KEY)
   pushHour: 20,                    // 매일 알림 시각 (KST)
@@ -7411,7 +7418,8 @@ window.koOf = function (en) {
   'use strict';
   var KEYS = ['opic_sim_v1', 'opic_hist', 'opic_topichist', 'opic_train_v1',
     'opic_check', 'opic_wrong_v1', 'opic_quizstat_v1', 'opic_exp_v1', 'opic_custom_v1', 'opic_study_v1', 'opic_listen_v1',
-    'opic_quest_v1', 'opic_metrics_v1', 'opic_ob_v1', 'opic_myans_v1', 'opic_train_ob_v1'];   // 계정(opic_auth_v1)은 기기 간 이동 대상이 아니라 제외
+    'opic_quest_v1', 'opic_metrics_v1', 'opic_ob_v1', 'opic_myans_v1', 'opic_train_ob_v1',
+    'opic_goal_v1', 'opic_goal_level', 'opic_wlnote_seen', 'opic_wlnote_hide', 'opic_myans_tips', 'opic_lic_last'];   // 계정 데이터 전부 (기기 설정 · 녹음 · 로그인 기록만 기기에 남음)   // 계정(opic_auth_v1)은 기기 간 이동 대상이 아니라 제외
   window.PROGRESS_KEYS = KEYS;
 
   window.exportProgress = function () {
@@ -7622,7 +7630,7 @@ window.koOf = function (en) {
   if (!window.customElements || customElements.get('oc-dday')) return;
   var CSS = ":host{display:inline-block;width:280px;max-width:100%;font-family:Arial,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;container-type:inline-size}"
     + "*{box-sizing:border-box}.date{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:9px;margin-bottom:14px;color:#20213b;font-size:calc(14px + 10pt);font-weight:650;letter-spacing:-.3px}.date:before{content:'';width:6px;height:6px;border-radius:50%;background:#8f82ca}.date small{font-size:calc(9px + 10pt);color:#8a829e;font-weight:700;letter-spacing:1.6px;margin-right:3px}"
-    + ".case{aspect-ratio:2.933333;min-height:0;display:flex;background:linear-gradient(145deg,#52515c,#26252e);padding:9px;border-radius:20px;box-shadow:0 6px 0 #171720,0 11px 16px #20213b1d,inset 0 1px 1px #ffffff50;border:1px solid #53525c}.inner{width:100%;height:100%;display:flex;gap:5px;padding:5px;background:#17171f;border-radius:12px}"
+    + ".case{height:calc(var(--cw, 2.8px) * 34.09);min-height:0;display:flex;background:linear-gradient(145deg,#52515c,#26252e);padding:9px;border-radius:20px;box-shadow:0 6px 0 #171720,0 11px 16px #20213b1d,inset 0 1px 1px #ffffff50;border:1px solid #53525c}.inner{width:100%;height:100%;display:flex;gap:5px;padding:5px;background:#17171f;border-radius:12px}"
     + ".tile{position:relative;flex:1;min-width:0;height:100%;aspect-ratio:auto;background:linear-gradient(#34333c 0%,#34333c 49.5%,#292830 50%,#2e2d36 100%);border-radius:5px;color:#fff;display:grid;place-items:center;font-size:calc(23 * var(--cw, 2.8px) + 8pt);font-weight:700;font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;line-height:1;font-variant-numeric:tabular-nums;box-shadow:inset 0 1px #ffffff12,0 2px 2px #0005;text-shadow:0 2px 1px #0003;letter-spacing:-1px}.tile:after{content:'';position:absolute;left:0;right:0;top:50%;height:1px;background:#0b0a1180;box-shadow:0 1px #ffffff07}.tile:first-child{color:#d9edb6}.tile.sign{flex:.55;font-size:calc(14 * var(--cw, 2.8px) + 8pt)}.tile.zero{color:#77737f}"
     + ".caption{text-align:center;font-size:9px;letter-spacing:2px;color:#9993a5;margin-top:19px}.tile.changed{animation:turn .4s ease-out}@keyframes turn{from{transform:perspective(500px) rotateX(-30deg);filter:brightness(.6)}to{transform:perspective(500px) rotateX(0);filter:brightness(1)}}@media(prefers-reduced-motion:reduce){.tile.changed{animation:none}}"
     + "@container(max-width:220px){.date{font-size:calc(11px + 10pt);gap:5px;margin-bottom:10px}.date small{font-size:calc(8px + 10pt)}.case{padding:6px;border-radius:15px}.inner{gap:3px;padding:3px}.caption{font-size:8px}}"
@@ -7635,7 +7643,8 @@ window.koOf = function (en) {
   OCDday.prototype.constructor = OCDday;
   Object.setPrototypeOf(OCDday, HTMLElement);
   Object.defineProperty(OCDday, 'observedAttributes', { get: function () { return ['date']; } });
-  OCDday.prototype._fit = function () { var w = this.clientWidth || 280; this.style.setProperty('--cw', (w / 100) + 'px'); };
+  /* 폭 기준 단위(--cw = 폭/100). Safari(아이패드·아이폰)는 aspect-ratio 상자 안 height:100% 를 못 풀어서 케이스 높이도 이 단위로 직접 계산한다 */
+  OCDday.prototype._fit = function () { var w = this.getBoundingClientRect().width || this.clientWidth || 280; this.style.setProperty('--cw', (w / 100) + 'px'); };
   OCDday.prototype.connectedCallback = function () { var self = this; this._fit(); if (window.ResizeObserver) { this.ro = new ResizeObserver(function () { self._fit(); }); this.ro.observe(this); } else { this.onResize = function () { self._fit(); }; window.addEventListener('resize', this.onResize); } this.update(); this.timer = setInterval(function () { self.update(); }, 30000); this.onVisible = function () { self.update(); }; document.addEventListener('visibilitychange', this.onVisible); };
   OCDday.prototype.disconnectedCallback = function () { clearInterval(this.timer); if (this.ro) this.ro.disconnect(); if (this.onResize) window.removeEventListener('resize', this.onResize); document.removeEventListener('visibilitychange', this.onVisible); };
   OCDday.prototype.attributeChangedCallback = function () { if (this.isConnected) this.update(); };
@@ -12425,7 +12434,7 @@ window.koOf = function (en) {
     bootHold();
     cloud.registerDevice().then(function () { return cloud.refreshLicense(); }).then(function () { return sync.pull(); })
       .then(function () { return window.pullFlags ? window.pullFlags() : null; })
-      .then(function () { startTimers(); window.metric && window.metric('signin', { p: (u.app_metadata && u.app_metadata.provider) || 'email' }); })
+      .then(function () { syncReady = true; startTimers(); window.metric && window.metric('signin', { p: (u.app_metadata && u.app_metadata.provider) || 'email' }); })
       .catch(function (e) { console.warn('cloud init', e); })
       .then(bootDone);
   }
@@ -12501,9 +12510,12 @@ window.koOf = function (en) {
   function hash(s) { var h = 0; for (var i = 0; i < s.length; i++) { h = (h * 31 + s.charCodeAt(i)) | 0; } return String(h); }
   function localBlob() { var d = window.exportProgress().data; delete d.opic_metrics_v1; return d; }
   function localWeight(d) { var n = 0; Object.keys(d).forEach(function (k) { n += (d[k] || '').length; }); return n; }
+  var syncReady = false;   // 로그인 직후 서버 기록을 받기 전에는 올리지 않는다
   var sync = cloud.sync = {
     push: function (force) {
       if (!cur) return Promise.resolve(false);
+      if (!force && !syncReady) return Promise.resolve(false);
+      if (window.__acctSwitch) return Promise.resolve(false);
       var d = localBlob(), s = JSON.stringify(d), h = hash(s), m = meta();
       if (!force && m.hash === h) return Promise.resolve(false);
       return sb.from('progress').upsert({ user_id: cur.id, data: d, device_id: deviceId(), updated_at: new Date().toISOString() }).then(function (r) {
@@ -12534,10 +12546,15 @@ window.koOf = function (en) {
     }
   };
   function apply(remote) {
-    (window.PROGRESS_KEYS || Object.keys(remote)).forEach(function (k) { if (k in remote) { try { localStorage.setItem(k, remote[k]); } catch (e) {} } });
+    window.__acctSwitch = true;   // 새로고침 전까지 올리기 금지
+    var keys = (window.PROGRESS_KEYS || Object.keys(remote)).filter(function (k) { return k in remote; });
+    var pick = {}; keys.forEach(function (k) { pick[k] = remote[k]; });
+    keys.forEach(function (k) { try { localStorage.setItem(k, remote[k]); } catch (e) {} });
     setMeta({ hash: hash(JSON.stringify(remote)), at: Date.now() });
-    window.toast && window.toast('계정의 학습 기록을 가져왔습니다. 화면을 다시 불러옵니다.');
-    setTimeout(function () { location.reload(); }, 900);
+    /* 새로고침 직전에 화면이 옛 상태를 다시 저장해도, 부팅 첫 단계(04_boot)에서 서버 기록을 한 번 더 덮어쓴다 */
+    try { sessionStorage.setItem('opic__apply', JSON.stringify(pick)); } catch (e) {}
+    window.toast && window.toast('다른 기기에서 공부한 기록을 가져왔습니다. 화면을 다시 불러옵니다.');
+    setTimeout(function () { location.reload(); }, 700);
     return true;
   }
 
@@ -12559,8 +12576,28 @@ window.koOf = function (en) {
   }
   function stopTimers() { clearInterval(tSync); clearInterval(tHb); tSync = tHb = null; }
   document.addEventListener('visibilitychange', function () { if (document.hidden) sync.push(false); else if (cur) { heartbeat(); cloud.refreshLicense(); } });
-  window.addEventListener('beforeunload', function () { if (window.__acctSwitch) return; try { sync.push(false); } catch (e) {} });
+  window.addEventListener('beforeunload', function () { if (window.__acctSwitch || !syncReady) return; try { sync.push(false); } catch (e) {} });
   document.addEventListener('opic:commit', function () { clearTimeout(window.__syncSoon); window.__syncSoon = setTimeout(function () { sync.push(false); }, 4000); });
+  /* 기기에 무엇이 저장되든(설정 · 시험 기록 · 트레이닝 · 듣기 · 퀘스트 …) 3초 뒤 서버로 올린다 */
+  (function () {
+    var KEYS = {}; (window.PROGRESS_KEYS || []).forEach(function (k) { KEYS[k] = 1; }); delete KEYS.opic_metrics_v1;
+    var soon = function () { if (!cur || !syncReady || window.__acctSwitch) return; clearTimeout(window.__syncSoon); window.__syncSoon = setTimeout(function () { sync.push(false); }, 3000); };
+    try {
+      var P = Storage.prototype, _set = P.setItem, _rm = P.removeItem;
+      P.setItem = function (k, v) { _set.call(this, k, v); if (this === window.localStorage && KEYS[k]) soon(); };
+      P.removeItem = function (k) { _rm.call(this, k); if (this === window.localStorage && KEYS[k]) soon(); };
+    } catch (e) {}
+  })();
+  /* 다른 기기에서 공부한 기록: 앱으로 돌아올 때마다 서버를 확인한다 (시험 중에는 건너뜀) */
+  var lastPull = 0;
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden || !cur || !syncReady) return;
+    if (Date.now() - lastPull < 30000) return; lastPull = Date.now();
+    var ex = document.getElementById('sc-exam'); if (ex && ex.classList.contains('on')) return;
+    sync.pull().catch(function () {});
+  });
+  /* iOS 는 앱을 닫을 때 beforeunload 가 안 올 수 있다 */
+  window.addEventListener('pagehide', function () { if (window.__acctSwitch || !syncReady) return; try { sync.push(false); } catch (e) {} });
 
   /* ---------- 기능 잠금 (체험 범위 밖) ---------- */
   function wrap() {
@@ -13566,8 +13603,12 @@ window.koOf = function (en) {
     var obAt = window.quest.data().obDoneAt; if (!obAt || dkey(new Date(obAt)) === today) return;   // 온보딩 끝낸 그날은 아님
     /* Day 2·3 안내는 그 날짜(달력 기준 Day 2·3)에만, 그것도 한 번만. 그날 못 봤으면 건너뛴다 (매일 다시 뜨지 않게) */
     var di = window.quest.dayIndex ? window.quest.dayIndex() : 0;
-    if (!f.day2) { if (di === 2) { flags.set('day2', Date.now()); startDay2(false); } else if (di > 2) flags.set('day2', Date.now()); return; }
-    if (!f.day3) { if (di === 3) { flags.set('day3', Date.now()); startDay3(false); } else if (di > 3) flags.set('day3', Date.now()); }
+    var qd = window.quest.data() || {};
+    if (qd.day2Seen && !f.day2) { flags.set('day2', qd.day2Seen); f.day2 = qd.day2Seen; }
+    if (qd.day3Seen && !f.day3) { flags.set('day3', qd.day3Seen); f.day3 = qd.day3Seen; }
+    var mark = function (k) { var t = Date.now(); flags.set(k, t); try { var q = window.quest.data(); q[k + 'Seen'] = t; localStorage.setItem('opic_quest_v1', JSON.stringify(q)); } catch (e) {} };
+    if (!f.day2) { if (di === 2) { mark('day2'); startDay2(false); } else if (di > 2) mark('day2'); return; }
+    if (!f.day3) { if (di === 3) { mark('day3'); startDay3(false); } else if (di > 3) mark('day3'); }
   }
   document.addEventListener('opic:nav', function (e) { var id = e.detail && e.detail.id; setTimeout(function () { maybeDayFlow(id); }, 600); });
   setTimeout(function () { var s = document.querySelector('.screen.on'); if (s) maybeDayFlow(s.id); }, 2500);
