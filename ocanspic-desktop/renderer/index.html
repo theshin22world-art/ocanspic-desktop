@@ -2763,7 +2763,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 /* ===== 08_version.js ===== */
 /* ===== 버전 · 변경 내역 ===== */
 window.APP_NAME = '오캔스픽';
-window.APP_VERSION = '1.3.0';
+window.APP_VERSION = '1.3.1';
 window.CHANGELOG = [
   { v: '1.2.1', d: '2026-09-29', items: [
     '이용권 안내 새 디자인(강남 학원 vs 오캔스픽 비교). 체험(첫날 온보딩)이 끝나면 이용권이 있어야 기능이 열립니다',
@@ -2855,7 +2855,7 @@ window.CLOUD = {
   buyPath: '/buy',    // 결제 페이지 (사이트)
   naver: false,       // 네이버 로그인 (출시 후 추가 예정: true 로 바꾸면 버튼이 살아난다)
   ttsBase: '',        // 고품질 음성 팩 위치 (비우면 <url>/storage/v1/object/public/tts/v1/)
-  apple: false,       // Apple 로그인 (Apple 팀 승인 뒤 Supabase 설정 후 true)
+  apple: true,        // Apple 로그인 (2026-10-15 Supabase Apple 공급자 설정 완료)
   maxDevices: 2,
   reviewEmails: ['happycat@vibivi.co.kr'],   // 앱 심사용 계정: 이 주소만 이메일 코드 대신 비밀번호로 로그인 (Supabase 에서 비밀번호 사용자로 직접 생성)
   playSku: 'plus_3m',              // 앱 안 기본 상품 = 오캔플러스 (Play Console 에 같은 ID · 160,000원). dyn_3m(233,700) · up_dyn(30,000) 은 AL·영숙어 페이지가 생기면 앱 안에서 노출
