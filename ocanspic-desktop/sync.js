@@ -10,6 +10,7 @@ if (html.indexOf(tag) < 0) {
   if (i < 0) throw new Error('no <script> in app html');
   html = html.slice(0, i) + tag + '\n' + html.slice(i);
 }
+html = html.replace(/<title>[^<]*<\/title>/i, '<title>오캔스픽</title>');   /* 2026-11-27 창 제목은 항상 오캔스픽 */
 fs.mkdirSync(path.join(__dirname, 'renderer'), { recursive: true });
 fs.writeFileSync(out, html);
 console.log('renderer/index.html', (html.length / 1024 | 0) + 'KB');

@@ -28,6 +28,8 @@ contextBridge.exposeInMainWorld('ocan', {
     onExit: (f) => { listeners.exit.add(f); return () => listeners.exit.delete(f); }
   },
   tts: { speak: (text, sid, speed) => ipcRenderer.invoke('tts:speak', { text, sid, speed }) },
+  /* 2026-11-27 바탕화면 바로가기 (Windows) */
+  shortcut: { status: () => ipcRenderer.invoke('shortcut:status'), create: () => ipcRenderer.invoke('shortcut:create') },
   stt: {
     start: (sid) => ipcRenderer.send('stt:start', sid),
     push: (sid, pcm) => ipcRenderer.send('stt:push', sid, pcm),

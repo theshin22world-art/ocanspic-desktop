@@ -1,6 +1,6 @@
 /* ===== 오캔스픽 데스크톱 — Electron 메인 ===== */
 'use strict';
-const { app, BrowserWindow, ipcMain, session, utilityProcess, shell, dialog, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, session, utilityProcess, shell, dialog, Menu, systemPreferences } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const models = require('./models');
@@ -29,7 +29,7 @@ app.on('open-url', (e, url) => { e.preventDefault(); handleDeepLink(url); });   
 function createWindow() {
   win = new BrowserWindow({
     width: 1240, height: 860, minWidth: 900, minHeight: 640,
-    backgroundColor: '#0f1115',
+    backgroundColor: '#FFFFFF',
     title: '오캔스픽',
     icon: path.join(__dirname, 'build', 'icon.png'),
     autoHideMenuBar: true,
@@ -37,6 +37,8 @@ function createWindow() {
   });
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
   win.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: 'deny' }; });
+  /* 2026-11-27 창 제목은 항상 「오캔스픽」 (페이지 <title> 이 바뀌어도 타이틀 바는 그대로) */
+  win.on('page-title-updated', (e) => { e.preventDefault(); win.setTitle('오캔스픽'); });
   win.on('closed', () => { win = null; });
   win.webContents.on('did-finish-load', () => { if (pendingUrl) { win.webContents.send('auth:callback', pendingUrl); pendingUrl = null; } const u = process.argv.find(a => a.indexOf(PROTO + '://') === 0); if (u) { win.webContents.send('auth:callback', u); } });
 }
@@ -45,7 +47,16 @@ ipcMain.handle('app:openExternal', (e, url) => { if (/^https?:\/\//.test(url)) s
 /* 마이크 권한: 한 번 허용하면 끝 (OS 권한은 별도) */
 function setupPermissions() {
   const ses = session.defaultSession;
-  ses.setPermissionRequestHandler((wc, permission, cb) => { cb(['media', 'audioCapture', 'clipboard-read', 'clipboard-sanitized-write', 'notifications'].includes(permission)); });
+  ses.setPermissionRequestHandler((wc, permission, cb, details) => {
+    const ok = ['media', 'audioCapture', 'clipboard-read', 'clipboard-sanitized-write', 'notifications'].includes(permission);
+    /* 2026-11-27 macOS: 앱의 마이크 관문(79k_consent)이 처음 마이크를 열 때 macOS 마이크 허용 창을 한 번만 띄우고 그 결과를 그대로 쓴다 (이중 창 없음) */
+    const wantsMic = permission === 'media' && (!details || !details.mediaTypes || details.mediaTypes.indexOf('audio') >= 0);
+    if (ok && wantsMic && process.platform === 'darwin' && systemPreferences.getMediaAccessStatus('microphone') !== 'granted') {
+      systemPreferences.askForMediaAccess('microphone').then((g) => cb(!!g)).catch(() => cb(false));
+      return;
+    }
+    cb(ok);
+  });
   ses.setPermissionCheckHandler((wc, permission) => ['media', 'audioCapture', 'clipboard-read', 'clipboard-sanitized-write'].includes(permission));
 }
 
@@ -92,6 +103,36 @@ ipcMain.handle('app:info', () => ({ version: app.getVersion(), platform: process
 ipcMain.handle('app:openModels', () => shell.openPath(modelsDir()));
 ipcMain.handle('app:resetModels', () => { try { fs.rmSync(modelsDir(), { recursive: true, force: true }); } catch (e) {} if (engine) { engine.kill(); engine = null; engineReady = false; } return true; });
 
+/* ---------- 바탕화면 바로가기 (Windows) 2026-11-27 ----------
+   Microsoft Store(MSIX/AppX) 설치본은 설치 때 바탕화면 아이콘이 생기지 않는다 → 앱에서 만들어 준다.
+   · 스토어 설치본: explorer.exe shell:AppsFolder\<패키지 패밀리 이름>!<앱 ID> 로 연다 (설치 폴더가 업데이트마다 바뀌어도 동작)
+   · 일반 설치본(NSIS 등): 실행 파일을 직접 가리킨다 */
+const lnkPath = () => path.join(app.getPath('desktop'), '오캔스픽.lnk');
+function storeAumid() {
+  const m = process.execPath.match(/^(.*\\WindowsApps\\([^\\]+))\\/i);
+  if (!m) return null;
+  const parts = m[2].split('_');   /* 이름_버전_아키텍처_리소스ID_게시자ID */
+  if (parts.length < 5) return null;
+  let appId = 'OCansPic';   /* package.json build.appx.applicationId */
+  try { const x = fs.readFileSync(path.join(m[1], 'AppxManifest.xml'), 'utf8').match(/<Application\b[^>]*\bId="([^"]+)"/); if (x) appId = x[1]; } catch (e) {}
+  return parts[0] + '_' + parts[parts.length - 1] + '!' + appId;
+}
+function writeShortcut(op) {
+  if (process.platform !== 'win32') return { ok: false, reason: 'platform' };
+  let opts;
+  if (process.windowsStore) {
+    const id = storeAumid(); if (!id) return { ok: false, reason: 'store-id' };
+    opts = { target: path.join(process.env.SystemRoot || 'C:\\Windows', 'explorer.exe'), args: 'shell:AppsFolder\\' + id, icon: process.execPath, iconIndex: 0, description: '오캔스픽' };
+  } else {
+    opts = { target: process.execPath, cwd: path.dirname(process.execPath), icon: process.execPath, iconIndex: 0, description: '오캔스픽' };
+  }
+  return { ok: shell.writeShortcutLink(lnkPath(), op, opts), store: !!process.windowsStore };
+}
+ipcMain.handle('shortcut:status', () => ({ supported: process.platform === 'win32', exists: process.platform === 'win32' && fs.existsSync(lnkPath()), store: !!process.windowsStore }));
+ipcMain.handle('shortcut:create', () => { try { return writeShortcut(fs.existsSync(lnkPath()) ? 'replace' : 'create'); } catch (e) { return { ok: false, reason: String((e && e.message) || e) }; } });
+/* 스토어 업데이트로 설치 폴더가 바뀌면 바로가기 아이콘 경로도 새로 맞춘다 (이미 만든 바로가기가 있을 때만) */
+function refreshShortcut() { try { if (process.platform === 'win32' && process.windowsStore && fs.existsSync(lnkPath())) writeShortcut('replace'); } catch (e) {} }
+
 /* ---------- 자동 업데이트 (GitHub Releases) ---------- */
 function setupUpdater() {
   try {
@@ -107,11 +148,14 @@ function setupUpdater() {
 }
 
 app.whenReady().then(() => {
-  Menu.setApplicationMenu(null);
+  /* 2026-11-27 macOS 는 메뉴가 있어야 Cmd+C · V · X · A · Z(편집), Cmd+Q(종료), Cmd+W(창 닫기)가 동작한다. Windows 는 메뉴 없음 그대로 */
+  if (process.platform === 'darwin') Menu.setApplicationMenu(Menu.buildFromTemplate([{ role: 'appMenu' }, { role: 'editMenu' }, { role: 'windowMenu' }]));
+  else Menu.setApplicationMenu(null);
   setupPermissions();
   createWindow();
   if (models.status(modelsDir()).ready) startEngine();
   setupUpdater();
+  refreshShortcut();
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 });
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });

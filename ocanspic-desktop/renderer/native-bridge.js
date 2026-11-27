@@ -169,24 +169,23 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', installTts); else installTts();
   setTimeout(installTts, 0);
 
-  /* ---------- 최초 1회: 모델 내려받기 화면 ---------- */
+  /* ---------- 음성 엔진 준비 화면 (최초 1회 내려받기 · 실행 때 잠깐 준비) ----------
+     2026-11-27 9월 어두운 박스를 오캔스픽 라이트 디자인으로 교체. 데스크톱 전용 마이크 점검 화면은 삭제
+     (마이크 확인은 앱 공통 동의 · 마이크 관문 79k_consent 하나로) */
   var setupEl = null, lastP = null, setupErr = null, setupDone = false;
   function fmtMB(b) { return (b / 1048576).toFixed(b > 100e6 ? 0 : 1) + 'MB'; }
-  var micChecked = false; try { micChecked = localStorage.getItem('ocan_mic_ok') === '1'; } catch (e) {}
-  var micStage = null;   // null | 'ask' | 'listen' | 'ok' | 'fail'
   function paintSetup() {
     if (!setupEl) return;
-    if (setupDone && engineReady && !micChecked) { paintMic(); return; }
     if (setupDone && engineReady) { setupEl.remove(); setupEl = null; return; }
-    var h = '<div class="ocs-box"><div class="ocs-k">FIRST RUN · SPEECH ENGINE</div>';
+    var h = '<div class="ocs-box"><div class="ocs-mk">오캔스픽<i></i></div>';
     if (!setupDone) {
       h += '<h2>처음 한 번, 음성 엔진을 내려받습니다</h2>'
         + '<p>영어 음성(Kokoro)과 음성 인식(Whisper)을 이 PC에 설치합니다. 약 530MB, 한 번만 받으면 이후엔 인터넷 없이도 동작합니다.</p>';
-      if (setupErr) h += '<div class="ocs-err">내려받기에 실패했습니다: ' + esc(setupErr) + '</div><button class="ocs-btn" id="ocsRetry">다시 시도</button>';
+      if (setupErr) h += '<p class="ocs-err">내려받기에 실패했습니다: ' + esc(setupErr) + '</p><button class="ocs-btn" id="ocsRetry">다시 시도</button>';
       else if (lastP) {
         var pct = Math.round(lastP.overall * 100);
         h += '<div class="ocs-bar"><i style="width:' + pct + '%"></i></div>'
-          + '<div class="ocs-row"><span>' + esc(lastP.name) + (lastP.phase === 'done' ? ' ✓' : '') + '</span><span>' + fmtMB(lastP.received) + ' / ' + fmtMB(lastP.total) + ' · 전체 ' + pct + '%</span></div>'
+          + '<div class="ocs-row"><span>' + esc(lastP.name) + (lastP.phase === 'done' ? ' 완료' : '') + '</span><span>' + fmtMB(lastP.received) + ' / ' + fmtMB(lastP.total) + ' · 전체 ' + pct + '%</span></div>'
           + '<p class="ocs-dim">받으면서 바로 풀기 때문에 마지막에 잠시 멈춘 것처럼 보일 수 있습니다. 창을 닫지 마세요.</p>';
       } else h += '<div class="ocs-bar"><i style="width:0"></i></div><div class="ocs-row"><span>연결 중…</span><span></span></div>';
     } else {
@@ -197,63 +196,92 @@
     var rb = document.getElementById('ocsRetry'); if (rb) rb.onclick = function () { setupErr = null; lastP = null; paintSetup(); runSetup(); };
   }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '"': '&quot;', '>': '&gt;' }[c]; }); }
-  /* ---- 첫 실행 마이크 점검 ---- */
-  var micTimer = null, micPeak = 0;
-  function paintMic() {
-    if (!setupEl) return;
-    if (!micStage) micStage = 'ask';
-    var h = '<div class="ocs-box"><div class="ocs-k">FIRST RUN · MICROPHONE</div>';
-    if (micStage === 'ask') h += '<h2>마이크를 한 번만 확인할게요</h2><p>말하기 채점과 녹음에 마이크가 필요합니다. 아래 버튼을 누르면 권한 창이 한 번 뜨고, 3초 동안 아무 말이나 해 보세요.</p><button class="ocs-btn" id="ocsMic">🎙 마이크 확인 시작</button>';
-    else if (micStage === 'listen') h += '<h2>지금 말해 보세요</h2><p>"Hello, my name is…" 정도면 충분합니다.</p><div class="ocs-bar"><i id="ocsLvl" style="width:0;transition:width .08s"></i></div><div class="ocs-row"><span>입력 레벨</span><span id="ocsLvlTxt">듣는 중…</span></div>';
-    else if (micStage === 'ok') h += '<h2>잘 들립니다 ✓</h2><p>준비 끝. 이제 시작합니다.</p><button class="ocs-btn" id="ocsGo">시작하기</button>';
-    else h += '<h2>소리가 잡히지 않았습니다</h2><p>Windows 설정 → 개인 정보 → 마이크에서 앱 접근이 켜져 있는지, 헤드셋이 기본 장치인지 확인한 뒤 다시 시도하세요. 지금은 건너뛰고 나중에 설정 → 마이크 진단에서 확인해도 됩니다.</p><div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="ocs-btn" id="ocsMic">다시 시도</button><button class="ocs-btn" id="ocsSkip" style="background:#2a3140">건너뛰기</button></div>';
-    h += '</div>'; setupEl.innerHTML = h;
-    var b = document.getElementById('ocsMic'); if (b) b.onclick = startMicCheck;
-    var g = document.getElementById('ocsGo'); if (g) g.onclick = finishMic;
-    var sk = document.getElementById('ocsSkip'); if (sk) sk.onclick = finishMic;
-  }
-  function finishMic() { micChecked = true; try { localStorage.setItem('ocan_mic_ok', '1'); } catch (e) {} if (setupEl) { setupEl.remove(); setupEl = null; } }
-  function startMicCheck() {
-    micStage = 'listen'; micPeak = 0; paintMic();
-    navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
-      var c = new (window.AudioContext || window.webkitAudioContext)(); var src = c.createMediaStreamSource(stream); var an = c.createAnalyser(); an.fftSize = 1024; src.connect(an);
-      var buf = new Float32Array(an.fftSize), t0 = Date.now();
-      micTimer = setInterval(function () {
-        an.getFloatTimeDomainData(buf); var s = 0; for (var i = 0; i < buf.length; i++) s += buf[i] * buf[i]; var rms = Math.sqrt(s / buf.length);
-        micPeak = Math.max(micPeak, rms);
-        var el = document.getElementById('ocsLvl'); if (el) el.style.width = Math.min(100, rms * 900) + '%';
-        var tx = document.getElementById('ocsLvlTxt'); if (tx) tx.textContent = Math.max(0, 3 - Math.floor((Date.now() - t0) / 1000)) + '초';
-        if (Date.now() - t0 > 3200) { clearInterval(micTimer); stream.getTracks().forEach(function (t) { t.stop(); }); try { c.close(); } catch (e) {} micStage = micPeak > 0.01 ? 'ok' : 'fail'; paintMic(); }
-      }, 80);
-    }).catch(function () { micStage = 'fail'; paintMic(); });
-  }
   function runSetup() {
     O.models.ensure().then(function (st) { setupDone = true; paintSetup(); O.engine.start(); }).catch(function (e) { setupErr = (e && e.message) || String(e); paintSetup(); });
   }
-  function mountSetup() {
+  var cssDone = false;
+  function addCss() {
+    if (cssDone) return; cssDone = true;
     var css = document.createElement('style');
-    css.textContent = '.ocs{position:fixed;inset:0;z-index:9000;background:#0f1115;color:#e8ebf2;display:flex;align-items:center;justify-content:center;padding:24px;font-family:inherit}'
-      + '.ocs-box{max-width:520px;width:100%;background:#161a21;border:1px solid #272d39;border-radius:18px;padding:28px 28px 24px}'
-      + '.ocs-k{font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.14em;color:#5b8cff;margin-bottom:10px}'
-      + '.ocs h2{margin:0 0 8px;font-size:20px}.ocs p{margin:0 0 16px;color:#98a1b2;font-size:14px;line-height:1.6}'
-      + '.ocs-bar{height:8px;background:#1c212a;border-radius:4px;overflow:hidden}.ocs-bar i{display:block;height:100%;background:#5b8cff;transition:width .3s}'
-      + '.ocs-bar.ind i{width:30%;animation:ocsind 1.2s ease-in-out infinite}@keyframes ocsind{0%{transform:translateX(-100%)}100%{transform:translateX(340%)}}'
-      + '.ocs-row{display:flex;justify-content:space-between;font-size:12.5px;color:#98a1b2;margin-top:8px;font-family:ui-monospace,Menlo,monospace}'
-      + '.ocs-dim{color:#6b7484!important;font-size:12px!important;margin-top:12px!important}'
-      + '.ocs-err{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.4);border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:12px}'
-      + '.ocs-btn{background:#5b8cff;color:#fff;border:0;border-radius:10px;padding:10px 18px;font:inherit;font-weight:600;cursor:pointer}';
+    css.textContent = '.ocs{position:fixed;inset:0;z-index:9000;background:#FFFFFF;color:#20213B;display:flex;align-items:center;justify-content:center;padding:24px;font-family:inherit;word-break:keep-all;letter-spacing:-.02em}'
+      + '.ocs-box{max-width:460px;width:100%}'
+      + '.ocs-mk{display:inline-flex;align-items:flex-end;gap:3px;margin-bottom:22px;font-size:15px;font-weight:800;color:#6E62B4;letter-spacing:-.04em}'
+      + '.ocs-mk i{width:6px;height:6px;border-radius:50%;background:#D9EDB6;margin-bottom:4px}'
+      + '.ocs h2{margin:0 0 8px;font-size:21px;font-weight:800;line-height:1.35;letter-spacing:-.04em;color:#20213B}'
+      + '.ocs p{margin:0 0 22px;color:#5E6075;font-size:14px;line-height:1.65}'
+      + '.ocs-bar{height:4px;background:#EEEFF3;border-radius:0;overflow:hidden}.ocs-bar i{display:block;height:100%;background:#6E62B4;border-radius:0;transition:width .3s}'
+      + '.ocs-bar.ind i{width:28%;animation:ocsind 1.2s ease-in-out infinite}@keyframes ocsind{0%{transform:translateX(-100%)}100%{transform:translateX(360%)}}'
+      + '.ocs-row{display:flex;justify-content:space-between;gap:12px;font-size:12.5px;color:#8B8FA3;margin-top:10px;font-variant-numeric:tabular-nums}'
+      + '.ocs-dim{color:#8B8FA3!important;font-size:12px!important;margin:14px 0 0!important}'
+      + '.ocs-err{color:#E5484D!important;font-size:13px!important;margin:0 0 14px!important}'
+      + '.ocs-btn{height:44px;padding:0 22px;background:#20213B;color:#fff;border:0;border-radius:999px;font:inherit;font-size:15px;font-weight:700;letter-spacing:-.02em;cursor:pointer}'
+      + '@media (prefers-reduced-motion:reduce){.ocs-bar.ind i{animation:none;width:100%}}'
+      /* 바탕화면 바로가기 안내 배너 (Windows 첫 실행 1회) */
+      + '.ocsc{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:8000;width:min(480px,calc(100vw - 32px));box-sizing:border-box;display:flex;align-items:center;gap:14px;padding:14px 12px 14px 18px;background:#FFFFFF;border:1px solid #E6E7EE;border-radius:14px;box-shadow:0 10px 30px rgba(32,33,59,.14);font-family:inherit;color:#20213B;word-break:keep-all;letter-spacing:-.02em}'
+      + '.ocsc .t{flex:1;min-width:0;font-size:13px;line-height:1.5;color:#5E6075}.ocsc .t b{display:block;font-size:14.5px;font-weight:800;color:#20213B;letter-spacing:-.03em}'
+      + '.ocsc .go{flex:none;height:38px;padding:0 16px;border:0;border-radius:999px;background:#20213B;color:#fff;font:inherit;font-size:13.5px;font-weight:700;cursor:pointer}'
+      + '.ocsc .x{flex:none;width:30px;height:30px;border:0;background:none;color:#8B8FA3;display:grid;place-items:center;cursor:pointer;padding:0}.ocsc .x svg{width:16px;height:16px}';
     document.head.appendChild(css);
+  }
+  function mountSetup() {
+    addCss();
     setupEl = document.createElement('div'); setupEl.className = 'ocs'; document.body.appendChild(setupEl);
     paintSetup();
   }
   O.models.onProgress(function (p) { lastP = p; paintSetup(); });
+  O.engine.status().then(function (s) { if (s.ready) paintSetup(); });   /* 준비 화면을 띄운 뒤 엔진이 이미 켜져 있었으면 바로 닫는다 */
   function boot() {
     O.models.status().then(function (st) {
-      if (st.ready) { setupDone = true; if (!engineReady || !micChecked) { mountSetup(); } return; }
-      mountSetup(); runSetup();
+      if (st.ready) { setupDone = true; if (!engineReady) mountSetup(); }
+      else { mountSetup(); runSetup(); }
+      shortcutBoot();
     });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+
+  /* ---------- 바탕화면 바로가기 (Windows) 2026-11-27 ----------
+     설정 › 편의 에 「바탕화면에 바로가기 만들기」, 첫 실행 때 한 번 안내 배너 */
+  function sayToast(m) { if (window.toast) window.toast(m); }
+  function makeShortcut() {
+    return O.shortcut.create().then(function (r) {
+      if (r && r.ok) { sayToast('바탕화면에 오캔스픽 아이콘을 만들었어요!'); return true; }
+      sayToast('바로가기를 만들지 못했어요. 잠시 뒤 다시 시도해 주세요.'); return false;
+    }, function () { sayToast('바로가기를 만들지 못했어요. 잠시 뒤 다시 시도해 주세요.'); return false; });
+  }
+  function addSettingsRow() {
+    if (document.getElementById('setShortcut')) return;
+    var pane = document.querySelector('.setpane[data-pane="conv"]'); if (!pane) return;
+    var caps = pane.querySelectorAll('.setcap'), before = caps.length ? caps[caps.length - 1] : null;
+    var cap = document.createElement('div'); cap.className = 'setcap'; cap.textContent = '바탕화면';
+    var row = document.createElement('div'); row.className = 'set';
+    row.innerHTML = '<button type="button" class="setlink" id="setShortcut">바탕화면에 바로가기 만들기<i></i></button>';
+    if (before) { pane.insertBefore(cap, before); pane.insertBefore(row, before); } else { pane.appendChild(cap); pane.appendChild(row); }
+    document.getElementById('setShortcut').onclick = function () { makeShortcut(); };
+  }
+  var TIP = 'ocan_shortcut_tip_v1';
+  function showTip() {
+    /* 음성 엔진 준비 화면 · 약관/마이크 관문 · 팝업이 모두 닫히고 홈 화면일 때만 (첫 실행 흐름을 가리지 않게) */
+    var home = document.querySelector('section.screen.on');
+    var obOn = window.quest && window.quest.obDone && !window.quest.obDone();   /* 첫날 온보딩 안내 중이면 끝난 뒤에 */
+    if (setupEl || obOn || document.querySelector('#cgGate.on, .mask.on') || !home || home.id !== 'sc-title') { setTimeout(showTip, 3000); return; }
+    try { if (localStorage.getItem(TIP)) return; localStorage.setItem(TIP, '1'); } catch (e) { return; }
+    addCss();
+    var b = document.createElement('div'); b.className = 'ocsc'; b.setAttribute('role', 'region'); b.setAttribute('aria-label', '바탕화면 바로가기 안내');
+    b.innerHTML = '<div class="t"><b>바탕화면에 오캔스픽 아이콘을 만들어 둘까요?</b>다음부터 바탕화면에서 바로 실행할 수 있어요.</div>'
+      + '<button type="button" class="go">만들기</button>'
+      + '<button type="button" class="x" aria-label="닫기"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="m3.5 3.5 9 9M12.5 3.5l-9 9"/></svg></button>';
+    document.body.appendChild(b);
+    b.querySelector('.x').onclick = function () { b.remove(); };
+    b.querySelector('.go').onclick = function () { b.remove(); makeShortcut(); };
+  }
+  function shortcutBoot() {
+    if (!O.shortcut) return;
+    O.shortcut.status().then(function (st) {
+      if (!st || !st.supported) return;   /* Windows 만 */
+      addSettingsRow();
+      if (!st.exists) setTimeout(showTip, 4000);
+    }).catch(function () {});
+  }
 
   /* ---------- 업데이트 ---------- */
   O.update.onReady(function (info) {
